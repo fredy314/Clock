@@ -1,0 +1,24 @@
+# ESP-IDF specific
+build/
+sdkconfig
+sdkconfig.old
+sdkconfig.defaults
+manage_components/
+
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+
+# Editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Project specific
+/tmp/
+.bash_history
+.vscode
