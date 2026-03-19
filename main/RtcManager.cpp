@@ -7,12 +7,48 @@
 #include "RtcManager.h"
 #include "driver/i2c_master.h"
 #include "esp_log.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include <sys/time.h>
 #include <string.h>
 
 #define RTC_ADDR 0x68
 
 void* RtcManager::dev_handle = nullptr;
+static bool s_rtc_synced = false;
+
+static void rtc_retry_task(void* pvParameters) {
+    while (!s_rtc_synced) {
+        vTaskDelay(pdMS_TO_TICKS(60000)); // Затримка 1 хвилина
+        
+        time_t rtc_time = RtcManager::getRtcTime();
+        if (rtc_time == 0) continue; // Помилка читання
+        
+        struct tm timeinfo;
+        localtime_r(&rtc_time, &timeinfo);
+        
+        if (timeinfo.tm_year > 120) {
+            struct timeval tv = {.tv_sec = rtc_time, .tv_usec = 0};
+            settimeofday(&tv, NULL);
+            ESP_LOGI("RtcManager", "System time synced from RTC (retry success): %s", asctime(&timeinfo));
+            s_rtc_synced = true;
+            break;
+        }
+        
+        // Якщо ми отримали IP або ESP-NOW синхронізувався раніше, 
+        // то системний час вже вірний. Можна припинити спроби, 
+        // бо RtcManager::updateRtc() все одно викличеться пізніше.
+        time_t now;
+        time(&now);
+        localtime_r(&now, &timeinfo);
+        if (timeinfo.tm_year > 120) {
+             ESP_LOGI("RtcManager", "System time already synced via other source, stopping RTC retry.");
+             s_rtc_synced = true;
+             break;
+        }
+    }
+    vTaskDelete(NULL);
+}
 
 esp_err_t RtcManager::init(int sda, int scl) {
     i2c_master_bus_config_t bus_config = {};
@@ -45,8 +81,10 @@ esp_err_t RtcManager::init(int sda, int scl) {
         struct timeval tv = {.tv_sec = rtc_time, .tv_usec = 0};
         settimeofday(&tv, NULL);
         ESP_LOGI("RtcManager", "System time synced from RTC: %s", asctime(&timeinfo));
+        s_rtc_synced = true;
     } else {
-        ESP_LOGW("RtcManager", "RTC time is not valid, waiting for NTP/ESP-NOW");
+        ESP_LOGW("RtcManager", "RTC time is invalid or read failed, starting retry task...");
+        xTaskCreate(rtc_retry_task, "rtc_retry", 3072, NULL, 1, NULL);
     }
     
     return ESP_OK;
