@@ -5,6 +5,7 @@
 #include <freertos/task.h>
 #include <cstring>
 #include <new>
+#include <cmath>
 
 std::unique_ptr<MQTTRemote> MqttManager::_mqtt_remote;
 std::unique_ptr<HaBridge> MqttManager::_ha_bridge;
@@ -63,8 +64,8 @@ void MqttManager::publishAll() {
         _ha_temp_sensor->publishConfiguration();
         _ha_hum_sensor->publishConfiguration();
 
-        float t = _dht->getTemperature();
-        float h = _dht->getHumidity();
+        float t = roundf(_dht->getTemperature() * 10.0f) / 10.0f;
+        float h = roundf(_dht->getHumidity() * 10.0f) / 10.0f;
 
         _ha_temp_sensor->publishTemperature(static_cast<double>(t));
         _ha_hum_sensor->publishHumidity(static_cast<double>(h));
