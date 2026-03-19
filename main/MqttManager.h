@@ -7,12 +7,15 @@
 #include <MQTTRemote.h>
 #include <entities/HaEntityTemperature.h>
 #include <entities/HaEntityHumidity.h>
+#include <entities/HaEntityVoltage.h>
+#include <entities/HaEntityNumber.h>
 #include <nlohmann/json.hpp>
 #include "DhtManager.h"
+#include "BatteryMonitor.h"
 
 class MqttManager {
 public:
-    static void init(DhtManager* dht);
+    static void init(DhtManager* dht, BatteryMonitor* battery);
     static void publishAll();
     static void mqtt_task(void *pvParameters);
 
@@ -21,8 +24,11 @@ private:
     static std::unique_ptr<HaBridge> _ha_bridge;
     static std::unique_ptr<HaEntityTemperature> _ha_temp_sensor;
     static std::unique_ptr<HaEntityHumidity> _ha_hum_sensor;
+    static std::unique_ptr<HaEntityVoltage> _ha_bat_voltage;
+    static std::unique_ptr<HaEntityNumber> _ha_bat_percentage;
     static nlohmann::json _json_this_device_doc;
     static DhtManager* _dht;
+    static BatteryMonitor* _battery;
 
     static const char* TAG;
 };

@@ -180,10 +180,12 @@ esp_err_t WebServerManager::status_get_handler(httpd_req_t *req) {
     float t = roundf(_dht->getTemperature() * 10.0f) / 10.0f;
     float h = roundf(_dht->getHumidity() * 10.0f) / 10.0f;
 
-    char response[256];
+    const esp_app_desc_t *app_desc = esp_app_get_description();
+
+    char response[512];
     snprintf(response, sizeof(response), 
-             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f}", 
-             time_str, date_str, t, h);
+             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"project\":\"%s\",\"version\":\"%s\"}", 
+             time_str, date_str, t, h, app_desc->project_name, app_desc->version);
     
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, response);

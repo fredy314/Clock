@@ -14,7 +14,7 @@
 
 static const char *TAG = "ClockManager";
 
-ClockManager::ClockManager(Max7219& matrix, DhtManager& dht) : display(matrix), dht(dht) {}
+ClockManager::ClockManager(Max7219& matrix, DhtManager& dht, BatteryMonitor& battery) : display(matrix), dht(dht), battery(battery) {}
 
 void ClockManager::init() {
     if (esp_sntp_enabled()) {
@@ -76,6 +76,7 @@ void ClockManager::renderTime(int hours, int minutes) {
     drawChar(pos, m1); pos += 6;
     drawChar(pos, m2);
 
+    renderBattery();
     display.flush();
     colonVisible = !colonVisible; // Блимання двокрапки
 }
@@ -112,11 +113,26 @@ void ClockManager::renderSensors(float temp, float hum) {
     // Col 29: Row 0, 3  -> 0x09
     // Col 30: Row 2     -> 0x04
     // Col 31: Row 1, 4  -> 0x12
-    display.setColumn(29, 0x09);
+    display.setColumn(29, 0x19);
     display.setColumn(30, 0x04);
-    display.setColumn(31, 0x12);
-    
+    display.setColumn(31, 0x13);
+
     display.flush();
+}
+
+void ClockManager::renderBattery() {
+    int percentage = battery.getPercentage();
+    if (percentage < 90) {
+        int tens = percentage / 10;
+        if (tens > 8) tens = 8;
+        if (tens < 0) tens = 0;
+
+        uint8_t colData = 0;
+        for (int i = 0; i < tens; i++) {
+            colData |= (1 << (7 - i)); // Засвічуємо знизу вгору
+        }
+        display.setColumn(31, colData);
+    }
 }
 
 void ClockManager::renderLoading() {

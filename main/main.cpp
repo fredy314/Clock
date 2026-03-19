@@ -23,6 +23,7 @@
 #include "DhtManager.h"
 #include "MqttManager.h"
 #include "WebServerManager.h"
+#include "BatteryMonitor.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -108,8 +109,12 @@ extern "C" void app_main(void)
     // 6. ESP-NOW
     EspNowTimeSync::init();
 
+    // 6.5 Battery Monitor (GPIO 0 / ADC1_CH0)
+    BatteryMonitor* battery = new BatteryMonitor(0);
+    battery->init();
+
     // 7. MQTT
-    MqttManager::init(dht);
+    MqttManager::init(dht, battery);
 
     // Ініціалізація Web Server
     WebServerManager::init_spiffs();
@@ -117,7 +122,7 @@ extern "C" void app_main(void)
 
     // 8. Clock
     ESP_LOGI("MAIN", "Starting Clock task...");
-    ClockManager* clock = new ClockManager(*matrix, *dht);
+    ClockManager* clock = new ClockManager(*matrix, *dht, *battery);
     clock->init();
 
     xTaskCreate([](void* p) {

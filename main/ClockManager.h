@@ -6,11 +6,12 @@
  */
 #include "Max7219.h"
 #include "DhtManager.h"
+#include "BatteryMonitor.h"
 #include <time.h>
 
 class ClockManager {
 public:
-    ClockManager(Max7219& matrix, DhtManager& dht);
+    ClockManager(Max7219& matrix, DhtManager& dht, BatteryMonitor& battery);
 
     void init();
     void updateTask();
@@ -18,10 +19,12 @@ public:
 private:
     Max7219& display;
     DhtManager& dht;
+    BatteryMonitor& battery;
     bool colonVisible = true;
 
     void renderTime(int hours, int minutes);
     void renderSensors(float temp, float hum);
+    void renderBattery();
     void renderLoading();
     void drawChar(int startCol, int digit);
 };

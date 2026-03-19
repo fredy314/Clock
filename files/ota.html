@@ -25,6 +25,10 @@
         </header>
 
         <div class="card ota-card">
+            <div style="margin-bottom: 15px; font-size: 0.9em; opacity: 0.7;">
+                Проект: <span id="cur_project" style="font-weight: 600;">...</span><br>
+                Версія: <span id="cur_version" style="font-weight: 600;">...</span>
+            </div>
             <div class="card-label">Оберіть файл прошивки (.bin)</div>
             <form id="upload_form" enctype="multipart/form-data" method="post">
                 <div class="form-group">
@@ -68,13 +72,18 @@
         const progressText = document.getElementById('progress_text');
         const message = document.getElementById('message');
 
+        // Завантаження поточної інформації
+        fetch('/status')
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('cur_project').innerText = data.project || 'Clock';
+                document.getElementById('cur_version').innerText = data.version || '1.0.0';
+            })
+            .catch(err => console.error('Error fetching status:', err));
+
         uploadForm.addEventListener('submit', function(e) {
             e.preventDefault();
-            if (!fileInput.files[0]) return alert('Оберіть файл!');
-
-            const formData = new FormData();
-            formData.append('update', fileInput.files[0]);
-            
+            const file = fileInput.files[0];
             const type = document.getElementById('type_input').value;
             const force = document.getElementById('force_input').checked ? '1' : '0';
             
@@ -86,6 +95,7 @@
 
             const xhr = new XMLHttpRequest();
             xhr.open('POST', url, true);
+            xhr.setRequestHeader("Content-Type", "application/octet-stream");
 
             xhr.upload.onprogress = function(e) {
                 if (e.lengthComputable) {
@@ -111,7 +121,7 @@
                 }
             };
 
-            xhr.send(formData);
+            xhr.send(file);
         });
     </script>
 </body>
