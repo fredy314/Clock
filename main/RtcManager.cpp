@@ -60,7 +60,10 @@ esp_err_t RtcManager::init(int sda, int scl) {
     
     i2c_master_bus_handle_t bus_handle;
     esp_err_t ret = i2c_new_master_bus(&bus_config, &bus_handle);
-    if (ret != ESP_OK) return ret;
+    if (ret != ESP_OK) {
+        ESP_LOGE("RtcManager", "Failed to create I2C bus: %s", esp_err_to_name(ret));
+        return ret;
+    }
 
     i2c_device_config_t dev_config = {};
     dev_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
@@ -68,11 +71,15 @@ esp_err_t RtcManager::init(int sda, int scl) {
     dev_config.scl_speed_hz = 100000;
 
     ret = i2c_master_bus_add_device(bus_handle, &dev_config, (i2c_master_dev_handle_t*)&dev_handle);
-    if (ret != ESP_OK) return ret;
+    if (ret != ESP_OK) {
+        ESP_LOGE("RtcManager", "Failed to add RTC device to I2C bus: %s", esp_err_to_name(ret));
+        return ret;
+    }
 
     ESP_LOGI("RtcManager", "I2C Master initialized at SDA:%d, SCL:%d", sda, scl);
     
     // Спроба зчитати час при старті
+    ESP_LOGI("RtcManager", "First attempt to read RTC...");
     time_t rtc_time = getRtcTime();
     struct tm timeinfo;
     localtime_r(&rtc_time, &timeinfo);
@@ -80,10 +87,12 @@ esp_err_t RtcManager::init(int sda, int scl) {
     if (timeinfo.tm_year > 120) {
         struct timeval tv = {.tv_sec = rtc_time, .tv_usec = 0};
         settimeofday(&tv, NULL);
-        ESP_LOGI("RtcManager", "System time synced from RTC: %s", asctime(&timeinfo));
+        char time_str[64];
+        strftime(time_str, sizeof(time_str), "%Y-%m-%d %H:%M:%S", &timeinfo);
+        ESP_LOGI("RtcManager", "System time synced from RTC: %s", time_str);
         s_rtc_synced = true;
     } else {
-        ESP_LOGW("RtcManager", "RTC time is invalid or read failed, starting retry task...");
+        ESP_LOGW("RtcManager", "RTC time is invalid (%d) or read failed, starting retry task...", timeinfo.tm_year + 1900);
         xTaskCreate(rtc_retry_task, "rtc_retry", 3072, NULL, 1, NULL);
     }
     
