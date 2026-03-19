@@ -12,7 +12,6 @@ std::unique_ptr<HaBridge> MqttManager::_ha_bridge;
 std::unique_ptr<HaEntityTemperature> MqttManager::_ha_temp_sensor;
 std::unique_ptr<HaEntityHumidity> MqttManager::_ha_hum_sensor;
 std::unique_ptr<HaEntityVoltage> MqttManager::_ha_bat_voltage;
-std::unique_ptr<HaEntityNumber> MqttManager::_ha_bat_percentage;
 nlohmann::json MqttManager::_json_this_device_doc;
 DhtManager* MqttManager::_dht = nullptr;
 BatteryMonitor* MqttManager::_battery = nullptr;
@@ -65,13 +64,6 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery) {
     batVConfig.force_update = true;
     _ha_bat_voltage = std::make_unique<HaEntityVoltage>(*_ha_bridge, "Battery Voltage", std::string("bat_v"), batVConfig);
 
-    // Датчик заряду батареї (відсотки)
-    HaEntityNumber::Configuration batPConfig;
-    batPConfig.min_value = 0.0;
-    batPConfig.max_value = 100.0;
-    batPConfig.force_update = true;
-    _ha_bat_percentage = std::make_unique<HaEntityNumber>(*_ha_bridge, "Battery Level", std::string("bat_p"), batPConfig);
-
     _mqtt_remote->start();
     xTaskCreate(MqttManager::mqtt_task, "mqtt_task", 4096, NULL, 5, NULL);
 }
@@ -81,19 +73,16 @@ void MqttManager::publishAll() {
         _ha_temp_sensor->publishConfiguration();
         _ha_hum_sensor->publishConfiguration();
         _ha_bat_voltage->publishConfiguration();
-        _ha_bat_percentage->publishConfiguration();
 
         float t = roundf(_dht->getTemperature() * 10.0f) / 10.0f;
         float h = roundf(_dht->getHumidity() * 10.0f) / 10.0f;
         float v = roundf(_battery->getVoltage() * 100.0f) / 100.0f; // До сотих
-        int p = _battery->getPercentage();
 
         _ha_temp_sensor->publishTemperature(static_cast<double>(t));
         _ha_hum_sensor->publishHumidity(static_cast<double>(h));
         _ha_bat_voltage->publishVoltage(static_cast<double>(v));
-        _ha_bat_percentage->publishNumber(static_cast<float>(p));
         
-        ESP_LOGI(TAG, "MQTT Published: T=%.1f, H=%.1f, V=%.2fV, P=%d%%", t, h, v, p);
+        ESP_LOGI(TAG, "MQTT Published: T=%.1f, H=%.1f, V=%.2fV", t, h, v);
     }
 }
 

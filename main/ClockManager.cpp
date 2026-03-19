@@ -122,7 +122,7 @@ void ClockManager::renderSensors(float temp, float hum) {
 
 void ClockManager::renderBattery() {
     int percentage = battery.getPercentage();
-    if (percentage < 90) {
+    if (percentage < 70) {
         int tens = percentage / 10;
         if (tens > 8) tens = 8;
         if (tens < 0) tens = 0;
