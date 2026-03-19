@@ -36,6 +36,7 @@ private:
     static bool st_is_connected;
     static bool st_is_connecting;
     static bool st_is_waiting_for_retry;
+    static bool st_is_paused;
     
     static TimerHandle_t s_ap_retry_timer;
     static TimerHandle_t s_wifi_retry_timer;

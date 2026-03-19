@@ -40,6 +40,7 @@ TimerHandle_t WifiManager::s_wifi_retry_timer = NULL;
 static esp_netif_t* s_sta_netif = NULL;
 static esp_netif_t* s_ap_netif = NULL;
 static bool s_core_initialized = false;
+bool WifiManager::st_is_paused = false;
 
 void WifiManager::init_core() {
     if (s_core_initialized) return;
@@ -69,6 +70,7 @@ void WifiManager::init(const char* ssid, const char* password) {
     st_is_ap_mode = false;
     // встановити максимальну потужність
     esp_wifi_set_max_tx_power(78); // 78 = 19.5 dBm
+    esp_wifi_set_ps(WIFI_PS_NONE); // Вимкнути Modem Sleep для стабільності
     init_core();
     start_station();
 }
@@ -155,7 +157,7 @@ void WifiManager::wifi_event_handler(void* arg, esp_event_base_t event_base, int
         xTimerStart(s_wifi_retry_timer, 0);
     } else if (event_id == WIFI_EVENT_STA_DISCONNECTED) {
         st_is_connected = false;
-        if (!st_is_ap_mode) {
+        if (!st_is_ap_mode && !st_is_paused) {
             if (st_retry_num < MAX_RETRY) {
                 ESP_LOGI(TAG, "Disconnected. Waiting 10s before retry %d/%d...", st_retry_num + 1, MAX_RETRY);
                 st_is_waiting_for_retry = true;
@@ -194,6 +196,7 @@ void WifiManager::ip_event_handler(void* arg, esp_event_base_t event_base, int32
 }
 
 void WifiManager::pauseRetryTimer() {
+    st_is_paused = true;
     if (s_wifi_retry_timer != nullptr && xTimerIsTimerActive(s_wifi_retry_timer)) {
         xTimerStop(s_wifi_retry_timer, 0);
         ESP_LOGI(TAG, "WiFi retry timer paused.");
@@ -201,6 +204,7 @@ void WifiManager::pauseRetryTimer() {
 }
 
 void WifiManager::resumeRetryTimer() {
+    st_is_paused = false;
     if (s_wifi_retry_timer != nullptr && !st_is_connected && !st_is_ap_mode) {
         xTimerStart(s_wifi_retry_timer, 0);
         ESP_LOGI(TAG, "WiFi retry timer resumed.");
