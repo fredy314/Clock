@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clock Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>Розумний годинник</h1>
+            <div id="connection-status" class="status-badge">З'єднання...</div>
+        </header>
+
+        <main class="dashboard">
+            <div class="card time-card long">
+                <div class="card-label">Поточний час</div>
+                <div class="card-value" id="currentTime">--:--:--</div>
+                <div class="card-footer" id="currentDate">-- --- ----</div>
+            </div>
+
+            <div class="card-grid">
+                <div class="card sensor-card">
+                    <div class="card-icon">🌡️</div>
+                    <div class="card-label">Температура</div>
+                    <div class="card-value"><span id="tempValue">--.-</span><span class="unit">°C</span></div>
+                </div>
+
+                <div class="card sensor-card">
+                    <div class="card-icon">💧</div>
+                    <div class="card-label">Вологість</div>
+                    <div class="card-value"><span id="humValue">--.-</span><span class="unit">%</span></div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <nav>
+                <a href="/ota.html" class="nav-link">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                    </svg>
+                    Оновлення (OTA)
+                </a>
+            </nav>
+            <p class="copyright">© 2026 Fedir Vilhota</p>
+        </footer>
+    </div>
+    
+    <script src="scripts.js"></script>
+</body>
+</html>

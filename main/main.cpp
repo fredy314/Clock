@@ -22,6 +22,7 @@
 #include "RtcManager.h"
 #include "DhtManager.h"
 #include "MqttManager.h"
+#include "WebServerManager.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -109,6 +110,10 @@ extern "C" void app_main(void)
 
     // 7. MQTT
     MqttManager::init(dht);
+
+    // Ініціалізація Web Server
+    WebServerManager::init_spiffs();
+    WebServerManager::start_server(dht);
 
     // 8. Clock
     ESP_LOGI("MAIN", "Starting Clock task...");

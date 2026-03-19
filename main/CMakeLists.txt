@@ -1,2 +1,4 @@
-idf_component_register(SRCS "main.cpp" "WifiManager.cpp" "EspNowTimeSync.cpp" "SunTimeManager.cpp" "Max7219.cpp" "ClockManager.cpp" "RtcManager.cpp" "DhtManager.cpp" "MqttManager.cpp"
+idf_component_register(SRCS "main.cpp" "WifiManager.cpp" "Max7219.cpp" "ClockManager.cpp" "RtcManager.cpp" "DhtManager.cpp" "SunTimeManager.cpp" "EspNowTimeSync.cpp" "MqttManager.cpp" "WebServerManager.cpp"
                     INCLUDE_DIRS ".")
+
+spiffs_create_partition_image(storage ../files FLASH_IN_PROJECT)
