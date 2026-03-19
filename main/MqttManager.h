@@ -1,0 +1,30 @@
+#ifndef MQTT_MANAGER_H
+#define MQTT_MANAGER_H
+
+#include <memory>
+#include <string>
+#include <HaBridge.h>
+#include <MQTTRemote.h>
+#include <entities/HaEntityTemperature.h>
+#include <entities/HaEntityHumidity.h>
+#include <nlohmann/json.hpp>
+#include "DhtManager.h"
+
+class MqttManager {
+public:
+    static void init(DhtManager* dht);
+    static void publishAll();
+    static void mqtt_task(void *pvParameters);
+
+private:
+    static std::unique_ptr<MQTTRemote> _mqtt_remote;
+    static std::unique_ptr<HaBridge> _ha_bridge;
+    static std::unique_ptr<HaEntityTemperature> _ha_temp_sensor;
+    static std::unique_ptr<HaEntityHumidity> _ha_hum_sensor;
+    static nlohmann::json _json_this_device_doc;
+    static DhtManager* _dht;
+
+    static const char* TAG;
+};
+
+#endif // MQTT_MANAGER_H

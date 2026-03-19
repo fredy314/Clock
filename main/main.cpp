@@ -21,6 +21,7 @@
 #include "EspNowTimeSync.h"
 #include "RtcManager.h"
 #include "DhtManager.h"
+#include "MqttManager.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -106,7 +107,10 @@ extern "C" void app_main(void)
     // 6. ESP-NOW
     EspNowTimeSync::init();
 
-    // 7. Clock
+    // 7. MQTT
+    MqttManager::init(dht);
+
+    // 8. Clock
     ESP_LOGI("MAIN", "Starting Clock task...");
     ClockManager* clock = new ClockManager(*matrix, *dht);
     clock->init();

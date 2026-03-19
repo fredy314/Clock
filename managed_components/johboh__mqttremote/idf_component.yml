@@ -1,0 +1,5 @@
+dependencies:
+  idf: '>=4.4.3'
+description: MQTT wrapper for setting up an MQTT connection
+url: https://github.com/Johboh/MQTTRemote
+version: 4.0.6

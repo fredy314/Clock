@@ -1,0 +1,31 @@
+{
+    "name": "HomeAssistantEntities",
+    "keywords": "esp8266, esp32, mqtt, ha, homeassistant",
+    "description": "Library for providing sensors and actuators to Home Assistant using MQTT.",
+    "authors":
+    {
+      "name": "Johan Böhlin"
+    },
+    "version": "7.0.8",
+    "license": "MIT",
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/Johboh/HomeAssistantEntities.git"
+    },
+    "frameworks": ["espidf", "arduino"],
+    "platforms": ["espressif8266", "espressif32"],
+    "examples": [
+        {
+            "name": "Actuators",
+            "base": "examples/arduino/actuators",
+            "files": ["actuators.ino"]
+        },
+        {
+            "name": "Sensors",
+            "base": "examples/arduino/sensors",
+            "files": ["sensors.ino"]
+        }
+    ],
+    "dependencies": []
+  }

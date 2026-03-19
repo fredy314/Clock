@@ -15,7 +15,7 @@ public:
 
     void init();
     void readTask();
-
+    
     float getTemperature() const { return last_temp; }
     float getHumidity() const { return last_humidity; }
 

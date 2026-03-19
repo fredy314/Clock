@@ -1,0 +1,81 @@
+#include "MqttManager.h"
+#include <esp_log.h>
+#include <esp_mac.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <cstring>
+#include <new>
+
+std::unique_ptr<MQTTRemote> MqttManager::_mqtt_remote;
+std::unique_ptr<HaBridge> MqttManager::_ha_bridge;
+std::unique_ptr<HaEntityTemperature> MqttManager::_ha_temp_sensor;
+std::unique_ptr<HaEntityHumidity> MqttManager::_ha_hum_sensor;
+nlohmann::json MqttManager::_json_this_device_doc;
+DhtManager* MqttManager::_dht = nullptr;
+
+const char* MqttManager::TAG = "MqttManager";
+
+void MqttManager::init(DhtManager* dht) {
+    _dht = dht;
+    ESP_LOGI(TAG, "Initializing MQTT Manager...");
+
+    // MAC-адреса для ID
+    uint8_t mac[6];
+    esp_read_mac(mac, ESP_MAC_WIFI_STA);
+    char suffix[7];
+    snprintf(suffix, sizeof(suffix), "%02X%02X%02X", mac[3], mac[4], mac[5]);
+
+    std::string deviceId = std::string("esp32_clock_") + suffix;
+    std::string deviceName = std::string("Clock Sensor ") + suffix;
+
+    _json_this_device_doc["identifiers"] = deviceId;
+    _json_this_device_doc["name"] = deviceName;
+    _json_this_device_doc["sw_version"] = "1.1.0";
+    _json_this_device_doc["model"] = "ESP32 Clock";
+    _json_this_device_doc["manufacturer"] = "Custom";
+
+    // Хак для MQTTRemote (неініціалізовані стани)
+    std::string mqttClientId = deviceId;
+    void* mem = ::operator new(sizeof(MQTTRemote));
+    std::memset(mem, 0, sizeof(MQTTRemote));
+    MQTTRemote* remote = new (mem) MQTTRemote(mqttClientId.c_str(), "mqtt.lan", 1883, "", "", 2048, 10);
+    _mqtt_remote.reset(remote);
+
+    _ha_bridge = std::make_unique<HaBridge>(*_mqtt_remote, deviceId, _json_this_device_doc);
+
+    // Датчик температури
+    HaEntityTemperature::Configuration tempConfig;
+    tempConfig.unit = HaEntityTemperature::Unit::C;
+    tempConfig.force_update = true;
+    _ha_temp_sensor = std::make_unique<HaEntityTemperature>(*_ha_bridge, "Temperature", std::string("temp"), tempConfig);
+
+    // Датчик вологості
+    HaEntityHumidity::Configuration humConfig;
+    humConfig.force_update = true;
+    _ha_hum_sensor = std::make_unique<HaEntityHumidity>(*_ha_bridge, "Humidity", std::string("hum"), humConfig);
+
+    _mqtt_remote->start();
+    xTaskCreate(MqttManager::mqtt_task, "mqtt_task", 4096, NULL, 5, NULL);
+}
+
+void MqttManager::publishAll() {
+    if (_mqtt_remote && _mqtt_remote->connected() && _dht) {
+        _ha_temp_sensor->publishConfiguration();
+        _ha_hum_sensor->publishConfiguration();
+
+        float t = _dht->getTemperature();
+        float h = _dht->getHumidity();
+
+        _ha_temp_sensor->publishTemperature(static_cast<double>(t));
+        _ha_hum_sensor->publishHumidity(static_cast<double>(h));
+        
+        ESP_LOGI(TAG, "MQTT Published: T=%.1f, H=%.1f", t, h);
+    }
+}
+
+void MqttManager::mqtt_task(void *pvParameters) {
+    while (1) {
+        MqttManager::publishAll();
+        vTaskDelay(pdMS_TO_TICKS(60000)); // Кожну хвилину
+    }
+}

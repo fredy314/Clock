@@ -1,0 +1,9 @@
+## IDF Component Manager Manifest File
+dependencies:
+  ## Required IDF version
+  idf:
+    version: '>=4.1.0'
+  johboh/homeassistantentities: ^7.0.1
+  johboh/nlohmann-json: ^3.11.2
+  johboh/mqttremote: ^4.0.0
+  espressif/mqtt: '*'

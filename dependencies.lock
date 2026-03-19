@@ -1,0 +1,58 @@
+dependencies:
+  espressif/mqtt:
+    component_hash: ffdad5659706b4dc14bc63f8eb73ef765efa015bf7e9adf71c813d52a2dc9342
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.3'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 1.0.0
+  idf:
+    source:
+      type: idf
+    version: 6.1.0
+  johboh/homeassistantentities:
+    component_hash: f4017257a3caaf18553ff056b9eeee21a35f3cffbe97db67333f736dc2d105dd
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    - name: johboh/nlohmann-json
+      registry_url: https://components.espressif.com
+      require: private
+      version: '>=3.11.3'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 7.0.8
+  johboh/mqttremote:
+    component_hash: 4f95c7e697dcfc314809f5b17c4cfd377b72314c53e98cdaa321f2302976a7c1
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4.3'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 4.0.6
+  johboh/nlohmann-json:
+    component_hash: 2a97e10124d755da820b0381e36a9a6504574328f262964ccea3f8b2f228fc66
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=4.4'
+    source:
+      registry_url: https://components.espressif.com/
+      type: service
+    version: 3.12.0
+direct_dependencies:
+- espressif/mqtt
+- idf
+- johboh/homeassistantentities
+- johboh/mqttremote
+- johboh/nlohmann-json
+manifest_hash: a83c036a002b06ac7462dec94567da7e599e4de36d5f1cab17c643b49d344ef6
+target: esp32c3
+version: 2.0.0
