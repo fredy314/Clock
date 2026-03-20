@@ -24,6 +24,7 @@
 static const char *TAG = "WebServerManager";
 httpd_handle_t WebServerManager::server = NULL;
 DhtManager* WebServerManager::_dht = nullptr;
+ClockManager* WebServerManager::_clock = nullptr;
 
 esp_err_t WebServerManager::init_spiffs() {
     ESP_LOGI(TAG, "Initializing SPIFFS");
@@ -126,11 +127,12 @@ esp_err_t WebServerManager::common_get_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-esp_err_t WebServerManager::start_server(DhtManager* dht) {
+esp_err_t WebServerManager::start_server(DhtManager* dht, ClockManager* clock) {
     _dht = dht;
+    _clock = clock;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.uri_match_fn = httpd_uri_match_wildcard;
-    config.max_uri_handlers = 10;
+    config.max_uri_handlers = 12;
     config.stack_size = 10240; // Збільшимо стек для безпеки OTA
 
     ESP_LOGI(TAG, "Starting server on port: '%d'", config.server_port);
@@ -143,6 +145,22 @@ esp_err_t WebServerManager::start_server(DhtManager* dht) {
             .user_ctx  = NULL
         };
         httpd_register_uri_handler(server, &status_uri);
+
+        httpd_uri_t temp_uri = {
+            .uri       = "/api/display/temp",
+            .method    = HTTP_GET,
+            .handler   = display_temp_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &temp_uri);
+
+        httpd_uri_t hum_uri = {
+            .uri       = "/api/display/hum",
+            .method    = HTTP_GET,
+            .handler   = display_hum_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &hum_uri);
 
         httpd_uri_t ota_post_uri = {
             .uri       = "/ota.html",
@@ -316,6 +334,18 @@ esp_err_t WebServerManager::ota_post_handler(httpd_req_t *req) {
         vTaskDelay(pdMS_TO_TICKS(1000));
         esp_restart();
     }
+    return ESP_OK;
+}
+
+esp_err_t WebServerManager::display_temp_handler(httpd_req_t *req) {
+    if (_clock) _clock->showTemp();
+    httpd_resp_sendstr(req, "OK");
+    return ESP_OK;
+}
+
+esp_err_t WebServerManager::display_hum_handler(httpd_req_t *req) {
+    if (_clock) _clock->showHum();
+    httpd_resp_sendstr(req, "OK");
     return ESP_OK;
 }
 

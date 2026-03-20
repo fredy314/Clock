@@ -10,7 +10,9 @@
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
+#include "esp_timer.h"
 #include <sys/time.h>
+#include <stdio.h>
 
 static const char *TAG = "ClockManager";
 
@@ -32,26 +34,33 @@ void ClockManager::init() {
 }
 
 void ClockManager::updateTask() {
-    int cycle_ticks = 0;
     while (true) {
-        time_t now;
-        struct tm timeinfo;
-        time(&now);
-        localtime_r(&now, &timeinfo);
-
-        // Перевірка чи час синхронізовано (рік > 2020)
-        if (timeinfo.tm_year > 120) {
-            //if (cycle_ticks < 5) {
-                renderTime(timeinfo.tm_hour, timeinfo.tm_min);
-            //} else {
-            //    renderSensors(dht.getTemperature(), dht.getHumidity());
-            //}
-            cycle_ticks = (cycle_ticks + 1) % 7;
-        } else {
-            renderLoading();
+        int64_t now_us = esp_timer_get_time();
+        
+        // Повернення до годинника через 2 секунди
+        if (currentMode != MODE_CLOCK && (now_us - modeStartTime) > 2000000) {
+            currentMode = MODE_CLOCK;
+            display.clear(); // Очищуємо для чистого переходу
         }
 
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        if (currentMode == MODE_TEMP) {
+            renderTemperature(dht.getTemperature());
+        } else if (currentMode == MODE_HUM) {
+            renderHumidity(dht.getHumidity());
+        } else {
+            time_t now;
+            struct tm timeinfo;
+            time(&now);
+            localtime_r(&now, &timeinfo);
+
+            if (timeinfo.tm_year > 120) {
+                renderTime(timeinfo.tm_hour, timeinfo.tm_min);
+            } else {
+                renderLoading();
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(500)); // Частіше оновлення для швидкості реакції
     }
 }
 
@@ -79,6 +88,74 @@ void ClockManager::renderTime(int hours, int minutes) {
     renderBattery();
     display.flush();
     colonVisible = !colonVisible; // Блимання двокрапки
+}
+
+void ClockManager::showTemp() {
+    currentMode = MODE_TEMP;
+    modeStartTime = esp_timer_get_time();
+}
+
+void ClockManager::showHum() {
+    currentMode = MODE_HUM;
+    modeStartTime = esp_timer_get_time();
+}
+
+void ClockManager::renderTemperature(float temp) {
+    display.clear();
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%.1f", temp);
+    
+    int pos = 1;
+    for(int i=0; buf[i]; i++) {
+        if (buf[i] == '.') {
+            display.setColumn(pos, 0x80); // Точка знизу
+            pos += 2;
+        } else if (buf[i] >= '0' && buf[i] <= '9') {
+            drawChar(pos, buf[i] - '0');
+            pos += 6;
+        }
+    }
+    
+    // Символ °C
+    display.setColumn(pos, 0x06); // Градус
+    display.setColumn(pos+1, 0x09);
+    display.setColumn(pos+2, 0x06);
+    pos += 4;
+    
+    // Літера C (ручне малювання 5x8)
+    display.setColumn(pos,   0x3E);
+    display.setColumn(pos+1, 0x41);
+    display.setColumn(pos+2, 0x41);
+    display.setColumn(pos+3, 0x41);
+    display.setColumn(pos+4, 0x22);
+
+    display.flush();
+}
+
+void ClockManager::renderHumidity(float hum) {
+    display.clear();
+    char buf[16];
+    snprintf(buf, sizeof(buf), "%.1f", hum);
+    
+    int pos = 1;
+    for(int i=0; buf[i]; i++) {
+        if (buf[i] == '.') {
+            display.setColumn(pos, 0x80);
+            pos += 2;
+        } else if (buf[i] >= '0' && buf[i] <= '9') {
+            drawChar(pos, buf[i] - '0');
+            pos += 6;
+        }
+    }
+    
+    // Символ %
+    display.setColumn(pos,   0x63);
+    display.setColumn(pos+1, 0x14);
+    display.setColumn(pos+2, 0x08);
+    display.setColumn(pos+3, 0x28);
+    display.setColumn(pos+4, 0xC6);
+
+    display.flush();
 }
 
 void ClockManager::renderSensors(float temp, float hum) {

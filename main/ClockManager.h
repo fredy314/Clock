@@ -16,13 +16,22 @@ public:
     void init();
     void updateTask();
 
+    void showTemp();
+    void showHum();
+
 private:
+    enum DisplayMode { MODE_CLOCK, MODE_TEMP, MODE_HUM };
+    DisplayMode currentMode = MODE_CLOCK;
+    int64_t modeStartTime = 0;
+
     Max7219& display;
     DhtManager& dht;
     BatteryMonitor& battery;
     bool colonVisible = true;
 
     void renderTime(int hours, int minutes);
+    void renderTemperature(float temp);
+    void renderHumidity(float hum);
     void renderSensors(float temp, float hum);
     void renderBattery();
     void renderLoading();

@@ -121,12 +121,13 @@ extern "C" void app_main(void)
 
     // Ініціалізація Web Server
     WebServerManager::init_spiffs();
-    WebServerManager::start_server(dht);
-
+    
     // 8. Clock
     ESP_LOGI("MAIN", "Starting Clock task...");
     ClockManager* clock = new ClockManager(*matrix, *dht, *battery);
     clock->init();
+
+    WebServerManager::start_server(dht, clock);
 
     xTaskCreate([](void* p) {
         ((ClockManager*)p)->updateTask();

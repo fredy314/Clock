@@ -85,6 +85,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Плавний хід годинника щосекунди
     setInterval(tick, 500);
 
+    // Перемикання режимів відображення
+    document.getElementById('temp-card').addEventListener('click', () => {
+        fetch('/api/display/temp').catch(e => console.error(e));
+    });
+
+    document.getElementById('hum-card').addEventListener('click', () => {
+        fetch('/api/display/hum').catch(e => console.error(e));
+    });
+
     // Тогл логів
     document.getElementById('copyright').addEventListener('click', () => {
         const logsDiv = document.getElementById('logs-container');
