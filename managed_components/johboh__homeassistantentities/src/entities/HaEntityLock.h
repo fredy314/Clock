@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_LOCK_H__
 #define __HA_ENTITY_LOCK_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -30,26 +32,35 @@ public:
    * all state/command topics and so on. Leave as empty string for no child object ID. Valid characters
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    */
-  HaEntityLock(HaBridge &ha_bridge, std::string name, std::string child_object_id = "");
+  HaEntityLock(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _lock,
+                                             .state_class = std::nullopt,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the lock.
+   * @brief Publish the lock. This will publish to MQTT regardless if the value has changed. Also see
+   * updateLock().
    *
    * @param locked true if lock is locked, or false if unlocked.
    */
-  void publishLock(bool locked);
+  void publishLock(bool locked) { _ha_entity_sensor.publishValue(locked ? "OFF" : "ON"); } // locked == OFF
+
+  /**
+   * @brief Publish the lock, but only if the value has changed. Also see publishLock().
+   *
+   * @param locked true if lock is locked, or false if unlocked.
+   */
+  void updateLock(bool locked) { _ha_entity_sensor.updateValue(locked ? "OFF" : "ON"); } // locked == OFF
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-
-private:
-  std::optional<bool> _locked;
+  const homeassistantentities::BinarySensor::Lock _lock;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_LOCK_H__

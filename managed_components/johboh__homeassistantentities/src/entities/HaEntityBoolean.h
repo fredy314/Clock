@@ -2,6 +2,7 @@
 #define __HA_ENTITY_BOOLEAN_H__
 
 #include "AttributeVariants.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -49,38 +50,61 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityBoolean(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                  Configuration configuration = _default);
+  HaEntityBoolean(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                  Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _boolean,
+                                             .state_class = std::nullopt,
+                                             .with_attributes = configuration.with_attributes,
+                                             .force_update = configuration.force_update,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the boolean value for the binary sensor.
-   * @param attributes optional attributes to send with the value. with_attributes in constructor must be set.
+   * @brief Publish the boolean value for the binary sensor. This will publish to MQTT regardless if the value has
+   * changed. Also see updateBoolean().
    *
    * @param value the value to publish.
-   * @param attributes optional attributes to publish.
+   * @param attributes optional attributes to send with the value. with_attributes in constructor must be set.
    */
-  void publishBoolean(bool value, Attributes::Map attributes = {});
+  void publishBoolean(bool value, Attributes::Map attributes = {}) {
+    _ha_entity_sensor.publishValue(value ? "ON" : "OFF", attributes);
+  }
 
   /**
-   * @brief Publish attributes only. with_attributes in constructor must be set.
+   * @brief Publish the boolean value for the binary sensor, but only if the value has changed. Also see
+   * publishBoolean().
+   *
+   * @param value the value to publish.
+   * @param attributes optional attributes to send with the value. with_attributes in constructor must be set.
+   */
+  void updateBoolean(bool value, Attributes::Map attributes = {}) {
+    _ha_entity_sensor.updateValue(value ? "ON" : "OFF", attributes);
+  }
+
+  /**
+   * @brief Publish attributes only. with_attributes in constructor must be set. This will publish to MQTT regardless if
+   * the value has changed. Also see updateAttributes().
    *
    * @param attributes attributes to publish.
    */
-  void publishAttributes(Attributes::Map attributes);
+  void publishAttributes(Attributes::Map attributes) { _ha_entity_sensor.publishAttributes(attributes); }
+
+  /**
+   * @brief Publish attributes only, but only if the value has changed. Also see
+   * publishAttributes(). with_attributes in constructor must be set.
+   *
+   * @param attributes attributes to publish.
+   */
+  void updateAttributes(Attributes::Map attributes) { _ha_entity_sensor.updateAttributes(attributes); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<bool> _value;
-  std::optional<Attributes::Map> _attributes;
+  const homeassistantentities::BinarySensor::Undefined::Boolean _boolean;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_BOOLEAN_H__

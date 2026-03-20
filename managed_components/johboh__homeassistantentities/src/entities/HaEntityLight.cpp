@@ -10,6 +10,7 @@
 #define OBJECT_ID_ONOFF "onoff"
 #define OBJECT_ID_EFFECT "effect"
 #define OBJECT_ID_BRIGHTNESS "brightness"
+#define OBJECT_ID_COLOR_TEMPERATURE "color_temperature"
 
 HaEntityLight::RGB extractColor(std::string &input) {
   HaEntityLight::RGB color;
@@ -17,9 +18,9 @@ HaEntityLight::RGB extractColor(std::string &input) {
   std::smatch matches;
 
   if (std::regex_match(input, matches, pattern)) {
-    color.r = static_cast<uint8_t>(std::stoi(matches[1]));
-    color.g = static_cast<uint8_t>(std::stoi(matches[2]));
-    color.b = static_cast<uint8_t>(std::stoi(matches[3]));
+    color.r = static_cast<uint8_t>(std::atoi(matches[1].str().c_str()));
+    color.g = static_cast<uint8_t>(std::atoi(matches[2].str().c_str()));
+    color.b = static_cast<uint8_t>(std::atoi(matches[3].str().c_str()));
   } else {
     // Handle invalid input
     color.r = color.g = color.b = 0;
@@ -55,6 +56,15 @@ void HaEntityLight::publishConfiguration() {
     doc["brightness_command_topic"] =
         _ha_bridge.getTopic(HaBridge::TopicType::Command, COMPONENT, _child_object_id, OBJECT_ID_BRIGHTNESS);
   }
+  if (_configuration.with_color_temperature != Configuration::ColorTemperature::None) {
+    doc["color_temp_state_topic"] =
+        _ha_bridge.getTopic(HaBridge::TopicType::State, COMPONENT, _child_object_id, OBJECT_ID_COLOR_TEMPERATURE);
+    doc["color_temp_command_topic"] =
+        _ha_bridge.getTopic(HaBridge::TopicType::Command, COMPONENT, _child_object_id, OBJECT_ID_COLOR_TEMPERATURE);
+    if (_configuration.with_color_temperature == Configuration::ColorTemperature::Kelvin) {
+      doc["color_temp_kelvin"] = true;
+    }
+  }
   if (_configuration.with_rgb_color) {
     doc["rgb_state_topic"] =
         _ha_bridge.getTopic(HaBridge::TopicType::State, COMPONENT, _child_object_id, OBJECT_ID_RGB);
@@ -72,6 +82,7 @@ void HaEntityLight::publishConfiguration() {
       addToJsonArray(effect_list_array, effect);
     }
   }
+
   _ha_bridge.publishConfiguration(COMPONENT, OBJECT_ID, _child_object_id, doc);
 }
 
@@ -81,6 +92,9 @@ void HaEntityLight::republishState() {
   }
   if (_brightness) {
     publishBrightness(*_brightness);
+  }
+  if (_color_temperature) {
+    publishColorTemperature(*_color_temperature);
   }
   if (_rgb) {
     publishRgb(*_rgb);
@@ -106,6 +120,15 @@ void HaEntityLight::publishBrightness(uint8_t brightness) {
   }
 }
 
+void HaEntityLight::publishColorTemperature(uint16_t temperature) {
+  if (_configuration.with_color_temperature != Configuration::ColorTemperature::None) {
+    _ha_bridge.publishMessage(
+        _ha_bridge.getTopic(HaBridge::TopicType::State, COMPONENT, _child_object_id, OBJECT_ID_COLOR_TEMPERATURE),
+        std::to_string(temperature));
+    _color_temperature = temperature;
+  }
+}
+
 void HaEntityLight::publishRgb(RGB rgb) {
   if (_configuration.with_rgb_color) {
     _ha_bridge.publishMessage(
@@ -123,6 +146,36 @@ void HaEntityLight::publishEffect(std::string effect) {
   }
 }
 
+void HaEntityLight::updateIsOn(bool on) {
+  if (!_on || *_on != on) {
+    publishIsOn(on);
+  }
+}
+
+void HaEntityLight::updateBrightness(uint8_t brightness) {
+  if (!_brightness || *_brightness != brightness) {
+    publishBrightness(brightness);
+  }
+}
+
+void HaEntityLight::updateColorTemperature(uint16_t temperature) {
+  if (!_color_temperature || *_color_temperature != temperature) {
+    publishColorTemperature(temperature);
+  }
+}
+
+void HaEntityLight::updateRgb(RGB rgb) {
+  if (!_rgb || *_rgb != rgb) {
+    publishRgb(rgb);
+  }
+}
+
+void HaEntityLight::updateEffect(std::string effect) {
+  if (!_effect || *_effect != effect) {
+    publishEffect(effect);
+  }
+}
+
 bool HaEntityLight::setOnOn(std::function<void(bool)> state_callback) {
   return _ha_bridge.remote().subscribe(
       _ha_bridge.getTopic(HaBridge::TopicType::Command, COMPONENT, _child_object_id, OBJECT_ID_ONOFF),
@@ -136,7 +189,17 @@ bool HaEntityLight::setOnBrightness(std::function<void(uint8_t)> callback) {
 
   return _ha_bridge.remote().subscribe(
       _ha_bridge.getTopic(HaBridge::TopicType::Command, COMPONENT, _child_object_id, OBJECT_ID_BRIGHTNESS),
-      [callback](std::string topic, std::string message) { callback(std::stoi(message)); });
+      [callback](std::string topic, std::string message) { callback(std::atoi(message.c_str())); });
+}
+
+bool HaEntityLight::setOnColorTemperature(std::function<void(uint16_t)> callback) {
+  if (_configuration.with_color_temperature == Configuration::ColorTemperature::None) {
+    return false;
+  }
+
+  return _ha_bridge.remote().subscribe(
+      _ha_bridge.getTopic(HaBridge::TopicType::Command, COMPONENT, _child_object_id, OBJECT_ID_COLOR_TEMPERATURE),
+      [callback](std::string topic, std::string message) { callback(std::atoi(message.c_str())); });
 }
 
 bool HaEntityLight::setOnRgb(std::function<void(RGB)> callback) {

@@ -27,6 +27,7 @@ void HaEntitySelect::publishConfiguration() {
   for (const std::string &option : _configuration.options) {
     addToJsonArray(options_array, option);
   }
+
   _ha_bridge.publishConfiguration(COMPONENT, _object_id, "", doc);
 }
 
@@ -39,6 +40,12 @@ void HaEntitySelect::republishState() {
 void HaEntitySelect::publishSelection(std::string option) {
   _ha_bridge.publishMessage(_ha_bridge.getTopic(HaBridge::TopicType::State, COMPONENT, _object_id), option);
   _selection = option;
+}
+
+void HaEntitySelect::updateSelection(std::string option) {
+  if (!_selection || *_selection != option) {
+    publishSelection(option);
+  }
 }
 
 bool HaEntitySelect::setOnSelected(std::function<void(std::string)> select_callback) {

@@ -1,6 +1,7 @@
 #ifndef __HA_ENTITY_BRIGHTNESS_H__
 #define __HA_ENTITY_BRIGHTNESS_H__
 
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -42,31 +43,43 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityBrightness(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                     Configuration configuration = _default);
+  HaEntityBrightness(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                     Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(
+            ha_bridge, name, child_object_id,
+            HaEntitySensor::Configuration{
+                .device_class = _brightness,
+                .unit_of_measurement = homeassistantentities::Sensor::Undefined::Brightness::Unit::Percent,
+                .icon = "mdi:brightness-percent",
+                .force_update = configuration.force_update,
+            })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the brightness.
+   * @brief Publish the brightness. This will publish to MQTT regardless if the value has changed.
+   * Also see updateBrightness().
    *
    * @param brightness brightness in %.
    */
-  void publishBrightness(double brightness);
+  void publishBrightness(double brightness) { _ha_entity_sensor.publishValue(brightness); }
+
+  /**
+   * @brief Publish the brightness, but only if the value has changed. Also see
+   * publishBrightness().
+   *
+   * @param brightness brightness in %.
+   */
+  void updateBrightness(double brightness) { _ha_entity_sensor.updateValue(brightness); }
 
 private:
   std::string stateTopic();
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<double> _brightness;
+  const homeassistantentities::Sensor::Undefined::Brightness _brightness;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_BRIGHTNESS_H__

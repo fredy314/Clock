@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_DOOR_H__
 #define __HA_ENTITY_DOOR_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -30,26 +32,35 @@ public:
    * all state/command topics and so on. Leave as empty string for no child object ID. Valid characters
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    */
-  HaEntityDoor(HaBridge &ha_bridge, std::string name, std::string child_object_id = "");
+  HaEntityDoor(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _door,
+                                             .state_class = std::nullopt,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the door.
+   * @brief Publish the door. This will publish to MQTT regardless if the value has changed. Also see
+   * updateDoor().
    *
    * @param open true or false if door is open or not.
    */
-  void publishDoor(bool open);
+  void publishDoor(bool open) { _ha_entity_sensor.publishValue(open ? "ON" : "OFF"); }
+
+  /**
+   * @brief Publish the door, but only if the value has changed. Also see publishDoor().
+   *
+   * @param open true or false if door is open or not.
+   */
+  void updateDoor(bool open) { _ha_entity_sensor.updateValue(open ? "ON" : "OFF"); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-
-private:
-  std::optional<bool> _open;
+  const homeassistantentities::BinarySensor::Door _door;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_DOOR_H__

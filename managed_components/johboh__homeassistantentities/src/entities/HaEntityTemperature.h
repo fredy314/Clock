@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_TEMPERATURE_H__
 #define __HA_ENTITY_TEMPERATURE_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -8,14 +10,11 @@
 #include <string>
 
 /**
- * @brief Represent a Temperature sensor (°C or °F).
+ * @brief Represent a Temperature sensor (see homeassistantentities::Sensor::Temperature:Unit in HaDeviceClasses.h).
  */
 class HaEntityTemperature : public HaEntity {
 public:
-  enum class Unit {
-    C,
-    F,
-  };
+  using Unit = homeassistantentities::Sensor::Temperature::Unit;
 
   struct Configuration {
     /**
@@ -52,28 +51,37 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityTemperature(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                      Configuration configuration = _default);
+  HaEntityTemperature(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                      Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _temperature,
+                                             .unit_of_measurement = configuration.unit,
+                                             .force_update = configuration.force_update,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the temperature.
+   * @brief Publish the temperature. This will publish to MQTT regardless if the value has changed. Also see
+   * updateTemperature().
    *
-   * @param temperature temperature in °C or °F, depending on what was selected at construction.
+   * @param temperature temperature in the unit specified in the configuration.
    */
-  void publishTemperature(double temperature);
+  void publishTemperature(double temperature) { _ha_entity_sensor.publishValue(temperature); }
+
+  /**
+   * @brief Publish the temperature, but only if the value has changed. Also see publishTemperature().
+   *
+   * @param temperature temperature in the unit specified in the configuration.
+   */
+  void updateTemperature(double temperature) { _ha_entity_sensor.updateValue(temperature); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<double> _temperature;
+  const homeassistantentities::Sensor::Temperature _temperature;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_TEMPERATURE_H__

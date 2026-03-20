@@ -6,30 +6,24 @@
     {
       "name": "Johan Böhlin"
     },
-    "version": "4.0.6",
+    "version": "6.0.2",
     "license": "MIT",
     "repository":
     {
       "type": "git",
       "url": "https://github.com/Johboh/MQTTRemote.git"
     },
-    "frameworks": "arduino",
-    "platforms": ["espressif8266", "espressif32"],
+    "frameworks": ["espidf", "arduino"],
+    "platforms": ["espressif32"],
     "examples": [
       {
           "name": "Publish and subscribe",
-          "base": "examples/arduino/publish_and_subscribe",
+          "base": "examples/arduino/espidf_stack/publish_and_subscribe",
           "files": ["publish_and_subscribe.ino"]
       }
     ],
     "build": {
-      "srcDir":"src"
+      "srcDir":"espidf"
     },
-    "dependencies": [
-        {
-          "owner": "256dpi",
-          "name": "MQTT",
-          "version": "^2.5.1"
-        }
-      ]
+    "dependencies": []
   }

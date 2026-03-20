@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_VOLTAGE_H__
 #define __HA_ENTITY_VOLTAGE_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -8,14 +10,11 @@
 #include <string>
 
 /**
- * @brief Represent a Voltage sensor (V).
+ * @brief Represent a Voltage sensor (see homeassistantentities::Sensor::Voltage:Unit in HaDeviceClasses.h).
  */
 class HaEntityVoltage : public HaEntity {
 public:
-  enum class Unit {
-    V,
-    mV,
-  };
+  using Unit = homeassistantentities::Sensor::Voltage::Unit;
 
   struct Configuration {
     /**
@@ -52,28 +51,37 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityVoltage(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                  Configuration configuration = _default);
+  HaEntityVoltage(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                  Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _voltage,
+                                             .unit_of_measurement = configuration.unit,
+                                             .force_update = configuration.force_update,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the voltage.
+   * @brief Publish the voltage. This will publish to MQTT regardless if the value has changed. Also see
+   * updateVoltage().
    *
-   * @param voltage voltage in mV or V, depending on what was selected at construction.
+   * @param voltage voltage in the unit specified in the configuration.
    */
-  void publishVoltage(double voltage);
+  void publishVoltage(double voltage) { _ha_entity_sensor.publishValue(voltage); }
+
+  /**
+   * @brief Publish the voltage, but only if the value has changed. Also see publishVoltage().
+   *
+   * @param voltage voltage in the unit specified in the configuration.
+   */
+  void updateVoltage(double voltage) { _ha_entity_sensor.updateValue(voltage); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<double> _voltage;
+  const homeassistantentities::Sensor::Voltage _voltage;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_VOLTAGE_H__

@@ -46,7 +46,7 @@ const char mqtt_password[] = "my-password";
 IJsonDocument _json_this_device_doc;
 void setupJsonForThisDevice() {
   _json_this_device_doc["identifiers"] = "my_hardware_" + std::string(mqtt_client_id);
-  _json_this_device_doc["name"] = "Kitchen";
+  _json_this_device_doc["name"] = "Livingroom";
   _json_this_device_doc["sw_version"] = "1.0.0";
   _json_this_device_doc["model"] = "my_hardware";
   _json_this_device_doc["manufacturer"] = "custom inc.";
@@ -54,15 +54,15 @@ void setupJsonForThisDevice() {
 MQTTRemote _mqtt_remote(mqtt_client_id, mqtt_host, 1883, mqtt_username, mqtt_password);
 
 // Create the Home Assistant bridge. This is shared across all entities.
-// We only have one per device/hardware. In our example, the name of our device is "kitchen".
+// We only have one per device/hardware. In our example, the name of our device is "livingroom".
 // See constructor of HaBridge for more documentation.
-HaBridge ha_bridge(_mqtt_remote, "kitchen", _json_this_device_doc);
+HaBridge ha_bridge(_mqtt_remote, "livingroom", _json_this_device_doc);
 
 // Create the two lights with the "Human readable" strings. This what will show up in Home Assistant.
 // As we have two entities of the same type (light) for the same device, we need to add a child object
 // id to separate them.
-HaEntityLight _ha_entity_light_left_bench(ha_bridge, "left bench", "kitchen_left_bench", {.with_brightness = true});
-HaEntityLight _ha_entity_light_right_bench(ha_bridge, "right bench", "kitchen_right_bench", {.with_brightness = true});
+HaEntityLight _ha_entity_light_left_bench(ha_bridge, "left bench", "left_bench", {.with_brightness = true});
+HaEntityLight _ha_entity_light_right_bench(ha_bridge, "right bench", "right_bench", {.with_brightness = true});
 
 bool _was_connected = false;
 unsigned long _last_publish_ms = 0;
@@ -81,23 +81,41 @@ void setup() {
   Serial.println("have wifi");
   Serial.print("IP number: ");
   Serial.println(WiFi.localIP());
+
+  // When using Platform IO with ESP32
+#if defined(ESP32) && defined(PLATFORMIO)
+  _mqtt_remote.start([](bool connected) {
+    if (connected) {
+      // Publish Home Assistant Configuration for both lights once connected to MQTT.
+      _ha_entity_light_left_bench.publishConfiguration();
+      _ha_entity_light_right_bench.publishConfiguration();
+
+      // Subscribe to new light "on" state pushed by Home Assistant.
+      _ha_entity_light_left_bench.setOnOn([&](bool on) { gpio_set_level(LED_PIN, on); });
+      _ha_entity_light_right_bench.setOnBrightness(
+          [&](uint8_t brightness) { ESP_LOGI(TAG, "Got brightness %d for left light", brightness); });
+    }
+  });
+#else // Not PlatformIO (Arduino IDE)
+  _mqtt_remote.setOnConnectionChange([](bool connected) {
+    // Publish Home Assistant Configuration for both lights once connected to MQTT.
+    if (connected) {
+      _ha_entity_light_left_bench.publishConfiguration();
+      _ha_entity_light_right_bench.publishConfiguration();
+
+      // Subscribe to new light "on" state pushed by Home Assistant.
+      _ha_entity_light_left_bench.setOnOn([&](bool on) { digitalWrite(LED_PIN, on); });
+      _ha_entity_light_right_bench.setOnBrightness(
+          [&](uint8_t brightness) { Serial.println("Got brightness " + String(brightness) + " for right light"); });
+    }
+  });
+#endif
 }
 
 void loop() {
+#if !defined(ESP32) && !defined(PLATFORMIO)
   _mqtt_remote.handle();
-
-  auto connected = _mqtt_remote.connected();
-  if (!_was_connected && connected) {
-    // Publish Home Assistant Configuration for both lights once connected to MQTT.
-    _ha_entity_light_left_bench.publishConfiguration();
-    _ha_entity_light_right_bench.publishConfiguration();
-
-    // Subscribe to new light "on" state pushed by Home Assistant.
-    _ha_entity_light_left_bench.setOnOn([&](bool on) { digitalWrite(LED_PIN, on); });
-    _ha_entity_light_right_bench.setOnBrightness(
-        [&](uint8_t brightness) { Serial.println("Got brightness " + String(brightness) + " for right light"); });
-  }
-  _was_connected = connected;
+#endif
 
   // Publish current light status every 10 seconds.
   auto now = millis();

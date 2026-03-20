@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_WEIGHT_H__
 #define __HA_ENTITY_WEIGHT_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -8,14 +10,11 @@
 #include <string>
 
 /**
- * @brief Represent a Weight sensor (g or kg).
+ * @brief Represent a Weight sensor (see homeassistantentities::Sensor::Weight:Unit in HaDeviceClasses.h).
  */
 class HaEntityWeight : public HaEntity {
 public:
-  enum class Unit {
-    g,
-    kg,
-  };
+  using Unit = homeassistantentities::Sensor::Weight::Unit;
 
   struct Configuration {
     /**
@@ -52,28 +51,37 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityWeight(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                 Configuration configuration = _default);
+  HaEntityWeight(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                 Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _weight,
+                                             .unit_of_measurement = configuration.unit,
+                                             .force_update = configuration.force_update,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the weight.
+   * @brief Publish the weight. This will publish to MQTT regardless if the value has changed. Also see
+   * updateWeight().
    *
-   * @param weight weight in g or kg, depending on what was selected at construction.
+   * @param weight weight in the unit specified in the configuration.
    */
-  void publishWeight(double weight);
+  void publishWeight(double weight) { _ha_entity_sensor.publishValue(weight); }
+
+  /**
+   * @brief Publish the weight, but only if the value has changed. Also see publishWeight().
+   *
+   * @param weight weight in the unit specified in the configuration.
+   */
+  void updateWeight(double weight) { _ha_entity_sensor.updateValue(weight); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<double> _weight;
+  const homeassistantentities::Sensor::Weight _weight;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_WEIGHT_H__

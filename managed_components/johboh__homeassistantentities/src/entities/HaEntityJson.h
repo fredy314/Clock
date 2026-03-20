@@ -3,6 +3,7 @@
 
 #include <HaBridge.h>
 #include <HaEntity.h>
+#include <HaEntitySensor.h>
 #include <IJson.h>
 #include <cstdint>
 #include <optional>
@@ -44,31 +45,42 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityJson(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-               Configuration configuration = _default);
+  HaEntityJson(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+               Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _json,
+                                             .force_update = configuration.force_update,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the JSON.
+   * @brief Publish the JSON. This will publish to MQTT regardless if the value has changed. Also see
+   * updateJson().
    *
    * @param json_doc the JSON document to publish.
    */
-  void publishJson(IJsonDocument &json_doc);
+  void publishJson(IJsonDocument &json_doc) {
+    auto message = toJsonString(json_doc);
+    _ha_entity_sensor.publishValue(message);
+  }
+
+  /**
+   * @brief Publish the JSON, but only if the value has changed. Also see publishJson().
+   *
+   * @param json_doc the JSON document to publish.
+   */
+  void updateJson(IJsonDocument &json_doc) {
+    auto message = toJsonString(json_doc);
+    _ha_entity_sensor.updateValue(message);
+  }
 
 private:
-  void publishMessage(std::string &message);
-
-private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<std::string> _json_message;
+  const homeassistantentities::Sensor::Undefined::Json _json;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_JSON_H__

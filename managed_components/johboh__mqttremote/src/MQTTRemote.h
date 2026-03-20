@@ -2,7 +2,6 @@
 #define __MQTT_REMOTE_H__
 
 #include "IMQTTRemote.h"
-
 #include <MQTT.h>
 #include <functional>
 #include <map>
@@ -11,6 +10,8 @@
 #include <WiFi.h>
 #elif ESP8266
 #include <ESP8266WiFi.h>
+#elif defined(ARDUINO_SAMD_MKRWIFI1010)
+#include <WiFi101.h>
 #else
 #error "Unsupported hardware. Sorry!"
 #endif
@@ -22,24 +23,59 @@
 class MQTTRemote : public IMQTTRemote {
 public:
   /**
-   * @brief Construct a new Remote object
+   * Additional configuration where most user can go with defaults.
+   */
+  struct Configuration {
+    /**
+     * Maximum message size, in bytes, for incoming and outgoing messages. Messages larger than this will be truncated.
+     * This will be allocated on the heap upon MQTTRemote object creation.
+     */
+    uint32_t buffer_size = 1024;
+
+    /**
+     * MQTT keep alive interval, in seconds. If the client fails to communicate with the broker within the specified
+     * Keep Alive period, the LWT/Last Will message is sent (by the broker).
+     */
+    uint32_t keep_alive_s = 10;
+
+    /**
+     * if true, will print on Serial on message received. Publish verbosity is controlled by the
+     * which publish method that is used. Connection information on setup will always be printed out.
+     */
+    bool receive_verbose = false;
+  };
+
+  /**
+   * @brief Construct a new MQTTRemote object
    *
    * @param client_id Base ID for this device. This is used for the last will / status
-   * topic.Example, if this is "esp_now_router", then the status/last will topic will be "esp_now_router/status". This
+   * topic. Example, if this is "esp_now_router", then the status/last will topic will be "esp_now_router/status". This
    * is also used as client ID for the MQTT connection. This has to be [a-zA-Z0-9_] only and unique among all MQTT
    * clients on the server. It should also be stable across connections.
    * @param host MQTT hostname or IP for MQTT server.
    * @param port MQTT port number.
    * @param username MQTT username.
    * @param password MQTT password.
-   * @param max_message_size the max message size one can send. The larger to more memory/RAM is needed. Default: 2048
-   * bytes
-   * @param keep_alive keep alive interval in seconds. Default: 10 seconds
-   * @param receive_verbose if true, will print on Serial on message received. Publish verbosity is controlled by the
-   * which publish method that is used. Connection information on setup will always be printed out.
+   */
+  MQTTRemote(std::string client_id, std::string host, int port, std::string username, std::string password)
+      : MQTTRemote(std::move(client_id), std::move(host), port, std::move(username), std::move(password),
+                   Configuration{}) {}
+
+  /**
+   * @brief Construct a new MQTTRemote object
+   *
+   * @param client_id Base ID for this device. This is used for the last will / status
+   * topic. Example, if this is "esp_now_router", then the status/last will topic will be "esp_now_router/status". This
+   * is also used as client ID for the MQTT connection. This has to be [a-zA-Z0-9_] only and unique among all MQTT
+   * clients on the server. It should also be stable across connections.
+   * @param host MQTT hostname or IP for MQTT server.
+   * @param port MQTT port number.
+   * @param username MQTT username.
+   * @param password MQTT password.
+   * @param configuration Additional configuration where most user can go with defaults.
    */
   MQTTRemote(std::string client_id, std::string host, int port, std::string username, std::string password,
-             uint16_t max_message_size = 2048, uint32_t keep_alive = 10, bool receive_verbose = true);
+             Configuration configuration);
 
   /**
    * Call from Arduino loop() function in main.
@@ -47,10 +83,11 @@ public:
   void handle();
 
   /**
-   * @brief Set optional callback when client is connected to server (every time, so expect calls on
-   * reconnection). Set to {} to clear callback.
+   * @brief Set optional callback on connect state change. Will be called when the client is connected
+   * to server (every time, so expect calls on reconnection), and on disconnect. The parameter will be true on new
+   * connection and false on disconnection. Set to {} to clear callback.
    */
-  void setOnConnected(std::function<void()> on_connected = {}) { _on_connected = on_connected; };
+  void setOnConnectionChange(std::function<void(bool connected)> callback = {}) { _on_connection_change = callback; };
 
   /**
    * @brief Publish a message.
@@ -115,7 +152,7 @@ private:
   WiFiClient _wifi_client;
   MQTTClient _mqtt_client;
   bool _was_connected = false;
-  std::function<void()> _on_connected;
+  std::function<void(bool)> _on_connection_change;
   std::map<std::string, SubscriptionCallback> _subscriptions;
   unsigned long _last_connection_attempt_timestamp_ms = 0;
 };

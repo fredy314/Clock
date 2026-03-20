@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_MOTION_H__
 #define __HA_ENTITY_MOTION_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -30,26 +32,35 @@ public:
    * all state/command topics and so on. Leave as empty string for no child object ID. Valid characters
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    */
-  HaEntityMotion(HaBridge &ha_bridge, std::string name, std::string child_object_id = "");
+  HaEntityMotion(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _motion,
+                                             .state_class = std::nullopt,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the motion.
+   * @brief Publish the motion. This will publish to MQTT regardless if the value has changed. Also see
+   * updateMotion().
    *
    * @param detected true or false if motion is detected.
    */
-  void publishMotion(bool detected);
+  void publishMotion(bool detected) { _ha_entity_sensor.publishValue(detected ? "ON" : "OFF"); }
+
+  /**
+   * @brief Publish the motion, but only if the value has changed. Also see publishMotion().
+   *
+   * @param detected true or false if motion is detected.
+   */
+  void updateMotion(bool detected) { _ha_entity_sensor.updateValue(detected ? "ON" : "OFF"); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-
-private:
-  std::optional<bool> _detected;
+  const homeassistantentities::BinarySensor::Motion _motion;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_MOTION_H__

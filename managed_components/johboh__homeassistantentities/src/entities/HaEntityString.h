@@ -2,6 +2,7 @@
 #define __HA_ENTITY_STRING_H__
 
 #include "AttributeVariants.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -16,12 +17,6 @@ class HaEntityString : public HaEntity {
 public:
   struct Configuration {
     /**
-     * @brief if set, will set to this device class. Must be one of
-     * https://www.home-assistant.io/integrations/sensor/#device-class
-     */
-    std::string device_class = "";
-
-    /**
      * @brief if true, setup an attribute topic attributes will be published to. With this set, attributes
      * can be published when the message is published, or using a separate call.
      */
@@ -35,7 +30,7 @@ public:
     bool force_update = false;
   };
 
-  inline static Configuration _default = {.device_class = "", .with_attributes = false, .force_update = false};
+  inline static Configuration _default = {.with_attributes = false, .force_update = false};
 
   /**
    * @brief Construct a new Ha Entity String object
@@ -56,39 +51,51 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityString(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                 Configuration configuration = _default);
+  HaEntityString(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                 Configuration configuration = _default)
+      : _ha_entity_sensor(HaEntitySensor(ha_bridge, name, child_object_id,
+                                         HaEntitySensor::Configuration{
+                                             .device_class = _string,
+                                             .state_class = std::nullopt,
+                                             .with_attributes = configuration.with_attributes,
+                                             .force_update = configuration.force_update,
+                                         })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the string.
-   * @param attributes optional attributes to send with the string. with_attributes in constructor must be set.
+   * @brief Publish the string. This will publish to MQTT regardless if the string has changed. Also see
+   * updateString().
    *
    * @param str the string to publish.
-   * @param attributes optional attributes to publish.
+   * @param attributes optional attributes to send with the string. with_attributes in constructor must be set.
    */
-  void publishString(std::string str, Attributes::Map attributes = {});
+  void publishString(std::string str, Attributes::Map attributes = {}) {
+    _ha_entity_sensor.publishValue(str, attributes);
+  }
+
+  /**
+   * @brief Publish the string, but only if the string has changed. Also see publishString().
+   *
+   * @param str the string to publish.
+   * @param attributes optional attributes to send with the string. with_attributes in constructor must be set.
+   */
+  void updateString(std::string str, Attributes::Map attributes = {}) {
+    _ha_entity_sensor.updateValue(str, attributes);
+  }
 
   /**
    * @brief Publish attributes only. with_attributes in constructor must be set.
    *
    * @param attributes
    */
-  void publishAttributes(Attributes::Map attributes);
+  void publishAttributes(Attributes::Map attributes) { _ha_entity_sensor.publishAttributes(attributes); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _device_class;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<std::string> _str;
-  std::optional<Attributes::Map> _attributes;
+  const homeassistantentities::Sensor::Undefined::String _string;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_STRING_H__

@@ -1,6 +1,8 @@
 #ifndef __HA_ENTITY_HUMIDITY_H__
 #define __HA_ENTITY_HUMIDITY_H__
 
+#include "HaDeviceClasses.h"
+#include "HaEntitySensor.h"
 #include <HaBridge.h>
 #include <HaEntity.h>
 #include <cstdint>
@@ -42,28 +44,38 @@ public:
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
    * @param configuration the configuration for this entity.
    */
-  HaEntityHumidity(HaBridge &ha_bridge, std::string name, std::string child_object_id = "",
-                   Configuration configuration = _default);
+  HaEntityHumidity(HaBridge &ha_bridge, std::string name, std::optional<std::string> child_object_id = std::nullopt,
+                   Configuration configuration = _default)
+      : _ha_entity_sensor(
+            HaEntitySensor(ha_bridge, name, child_object_id,
+                           HaEntitySensor::Configuration{
+                               .device_class = _humiditiy,
+                               .unit_of_measurement = homeassistantentities::Sensor::Humidity::Unit::Percent,
+                               .force_update = configuration.force_update,
+                           })) {}
 
 public:
-  void publishConfiguration() override;
-  void republishState() override;
+  void publishConfiguration() override { _ha_entity_sensor.publishConfiguration(); }
+  void republishState() override { _ha_entity_sensor.republishState(); }
 
   /**
-   * @brief Publish the humidity.
+   * @brief Publish the humidity. This will publish to MQTT regardless if the value has changed. Also see
+   * updateHumidity().
    *
    * @param humidity humidity in %.
    */
-  void publishHumidity(double humidity);
+  void publishHumidity(double humidity) { _ha_entity_sensor.publishValue(humidity); }
+
+  /**
+   * @brief Publish the humidity, but only if the value has changed. Also see publishHumidity().
+   *
+   * @param humidity humidity in %.
+   */
+  void updateHumidity(double humidity) { _ha_entity_sensor.updateValue(humidity); }
 
 private:
-  std::string _name;
-  HaBridge &_ha_bridge;
-  std::string _child_object_id;
-  Configuration _configuration;
-
-private:
-  std::optional<double> _humidity;
+  const homeassistantentities::Sensor::Humidity _humiditiy;
+  HaEntitySensor _ha_entity_sensor;
 };
 
 #endif // __HA_ENTITY_HUMIDITY_H__

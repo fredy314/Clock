@@ -22,6 +22,17 @@ public:
      */
     bool with_brightness = false;
 
+    enum class ColorTemperature {
+      None,
+      Mireds, // Color temperature is defined as mireds, value between 153 to 500.
+      Kelvin, // Color temperature is defined as Kelvin, value between 2000 to 6535.
+    };
+
+    /**
+     * @brief if set, the light supports color temperature.
+     */
+    ColorTemperature with_color_temperature = ColorTemperature::None;
+
     /**
      * @brief if True, the light supports RGB color.
      */
@@ -55,7 +66,7 @@ public:
    * say "upper", the configuration will be "homeassistant/binary_sensor/door/lock/upper/config". This also apply for
    * all state/command topics and so on. Leave as empty string for no child object ID. Valid characters
    * are [a-zA-Z0-9_-] (machine readable, not human readable)
-   * @param capabilities what this light supports.
+   * @param configuration what this light supports.
    */
   HaEntityLight(HaBridge &ha_bridge, std::string name, std::string child_object_id, Configuration configuration);
 
@@ -64,27 +75,71 @@ public:
   void republishState() override;
 
   /**
-   * @brief Publish the current on state.
+   * @brief Publish the current on state. This will publish to MQTT regardless if the value has changed. Also see
+   * updateIsOn().
    *
    * @param on if light is on or off.
    */
   void publishIsOn(bool on);
 
   /**
-   * @brief Publish the current brightness.
+   * @brief Publish the current on state, but only if the value has changed. Also see publishIsOn().
+   *
+   * @param on if light is on or off.
+   */
+  void updateIsOn(bool on);
+
+  /**
+   * @brief Publish the current brightness. This will publish to MQTT regardless if the value has changed. Also see
+   * updateBrightness().
    *
    * @param brightness of the light, between 0 and 255. Will only be published if the light is setup with this
-   * capability in the constructor.
+   * capability in the Configuration.
    */
   void publishBrightness(uint8_t brightness);
 
   /**
-   * @brief Publish the current selected effect.
+   * @brief Publish the current brightness, but only if the value has changed. Also see publishBrightness().
+   *
+   * @param brightness of the light, between 0 and 255. Will only be published if the light is setup with this
+   * capability in the Configuration.
+   */
+  void updateBrightness(uint8_t brightness);
+
+  /**
+   * @brief Publish the current color temperature. This will publish to MQTT regardless if the value has changed. Also
+   * see updateColorTemperature().
+   *
+   * @param temperature mireds or Kelvin, depending on what was specified in the Configuration. Will only be published
+   * if the light is setup with this capability in the Configuration.
+   */
+  void publishColorTemperature(uint16_t temperature);
+
+  /**
+   * @brief Publish the current color temperature, but only if the value has changed. Also see
+   * publishColorTemperature().
+   *
+   * @param temperature mireds or Kelvin, depending on what was specified in the Configuration. Will only be published
+   * if the light is setup with this capability in the Configuration.
+   */
+  void updateColorTemperature(uint16_t temperature);
+
+  /**
+   * @brief Publish the current selected effect. This will publish to MQTT regardless if the value has changed. Also see
+   * updateEffect().
    *
    * @param effect currently selected. Should be any of the effects from the Capabilities. Will only be published if the
-   * light is setup with this capability in the constructor.
+   * light is setup with this capability in the Configuration.
    */
   void publishEffect(std::string effect);
+
+  /**
+   * @brief Publish the current selected effect, but only if the value has changed. Also see publishEffect().
+   *
+   * @param effect currently selected. Should be any of the effects from the Capabilities. Will only be published if the
+   * light is setup with this capability in the Configuration.
+   */
+  void updateEffect(std::string effect);
 
   struct RGB {
     uint8_t r;
@@ -97,20 +152,38 @@ public:
   };
 
   /**
-   * @brief Publish the current RGB value.
+   * @brief Publish the current RGB value. This will publish to MQTT regardless if the value has changed. Also see
+   * updateRgb().
    *
    * @param rgb currently in affect. Will only be published if the light is setup with this capability in the
-   * constructor.
+   * Configuration.
    */
   void publishRgb(uint8_t r, uint8_t g, uint8_t b) { publishRgb({r, g, b}); }
 
   /**
-   * @brief Publish the current RGB value.
+   * @brief Publish the current RGB value, but only if the value has changed. Also see publishRgb().
    *
    * @param rgb currently in affect. Will only be published if the light is setup with this capability in the
-   * constructor.
+   * Configuration.
+   */
+  void updateRgb(uint8_t r, uint8_t g, uint8_t b) { updateRgb({r, g, b}); }
+
+  /**
+   * @brief Publish the current RGB value. This will publish to MQTT regardless if the value has changed. Also see
+   * updateRgb().
+   *
+   * @param rgb currently in affect. Will only be published if the light is setup with this capability in the
+   * Configuration.
    */
   void publishRgb(RGB rgb);
+
+  /**
+   * @brief Publish the current RGB value, but only if the value has changed. Also see publishRgb().
+   *
+   * @param rgb currently in affect. Will only be published if the light is setup with this capability in the
+   * Configuration.
+   */
+  void updateRgb(RGB rgb);
 
   /**
    * @brief Set callback for receving callbacks when there is a new on state that should be set.
@@ -122,6 +195,13 @@ public:
    * respected if the light is setup with this capability.
    */
   bool setOnBrightness(std::function<void(uint8_t)> brightness_callback);
+
+  /**
+   * @brief Set callback for receving callbacks when there is a new color temperature that should be set. Will only be
+   * respected if the light is setup with this capability. In mireds or Kelvin, depending on what was selected in the
+   * Configuration.
+   */
+  bool setOnColorTemperature(std::function<void(uint16_t)> color_temperature_callback);
 
   /**
    * @brief Set callback for receving callbacks when there is a new effect that should be set. Will only be
@@ -146,6 +226,7 @@ private:
   std::optional<RGB> _rgb;
   std::optional<std::string> _effect;
   std::optional<uint8_t> _brightness;
+  std::optional<uint16_t> _color_temperature;
 };
 
 #endif // __HA_ENTITY_LIGHT_H__
