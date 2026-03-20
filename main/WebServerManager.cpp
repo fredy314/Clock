@@ -6,6 +6,7 @@
  */
 
 #include "WebServerManager.h"
+#include "LogManager.h"
 #include <string.h>
 #include <stdio.h>
 #include <sys/param.h>
@@ -181,14 +182,21 @@ esp_err_t WebServerManager::status_get_handler(httpd_req_t *req) {
     float h = roundf(_dht->getHumidity() * 10.0f) / 10.0f;
 
     const esp_app_desc_t *app_desc = esp_app_get_description();
+    std::string logs_json = LogManager::getLogsJson(5);
 
-    char response[512];
-    snprintf(response, sizeof(response), 
-             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"project\":\"%s\",\"version\":\"%s\"}", 
-             time_str, date_str, t, h, app_desc->project_name, app_desc->version);
+    char *response = (char*)malloc(2048);
+    if (response == NULL) {
+        httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Memory error");
+        return ESP_FAIL;
+    }
+
+    snprintf(response, 2048, 
+             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"project\":\"%s\",\"version\":\"%s\",\"logs\":%s}", 
+             time_str, date_str, t, h, app_desc->project_name, app_desc->version, logs_json.c_str());
     
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, response);
+    free(response);
     return ESP_OK;
 }
 

@@ -24,6 +24,7 @@
 #include "MqttManager.h"
 #include "WebServerManager.h"
 #include "BatteryMonitor.h"
+#include "LogManager.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -74,6 +75,8 @@ extern "C" void app_main(void)
     // Встановлюємо часовий пояс на самому початку, щоб всі логи та функції часу працювали вірно
     setenv("TZ", "EET-2EEST,M3.5.0/3,M10.5.0/4", 1);
     tzset();
+
+    LogManager::init();
 
     ESP_LOGI("MAIN", "Booting...");
     // 1. Ініціалізація NVS
