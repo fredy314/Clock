@@ -12,13 +12,11 @@
 #include "rom/ets_sys.h"
 #include "esp_system.h"
 
-DhtManager::DhtManager(gpio_num_t pin) : dht_pin(pin) {}
+DhtManager::DhtManager(gpio_num_t pin) : dht_pin(pin), last_success_time(esp_timer_get_time()) {}
 
 void DhtManager::init() {
     gpio_set_direction(dht_pin, GPIO_MODE_INPUT_OUTPUT);
     gpio_set_pull_mode(dht_pin, GPIO_PULLUP_ONLY);
-    last_success_time = esp_timer_get_time();
-    error_count = 0;
 }
 
 void DhtManager::readTask() {
@@ -47,6 +45,7 @@ void DhtManager::readTask() {
             if (error_count >= 10) {
                 ESP_LOGE("DhtManager", "10 consecutive errors, re-initializing GPIO...");
                 init();
+                error_count = 0;
             }
         }
         vTaskDelay(pdMS_TO_TICKS(10000)); // Read every 10 seconds
