@@ -23,6 +23,8 @@ private:
     gpio_num_t dht_pin;
     float last_temp = 0.0f;
     float last_humidity = 0.0f;
+    int error_count = 0;
+    int64_t last_success_time = 0;
 
     esp_err_t read(float& humidity, float& temperature);
     esp_err_t wait_state(int state, int timeout_us);
