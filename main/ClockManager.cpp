@@ -41,11 +41,11 @@ void ClockManager::updateTask() {
 
         // Перевірка чи час синхронізовано (рік > 2020)
         if (timeinfo.tm_year > 120) {
-            if (cycle_ticks < 5) {
+            //if (cycle_ticks < 5) {
                 renderTime(timeinfo.tm_hour, timeinfo.tm_min);
-            } else {
-                renderSensors(dht.getTemperature(), dht.getHumidity());
-            }
+            //} else {
+            //    renderSensors(dht.getTemperature(), dht.getHumidity());
+            //}
             cycle_ticks = (cycle_ticks + 1) % 7;
         } else {
             renderLoading();

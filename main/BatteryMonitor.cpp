@@ -89,7 +89,7 @@ void BatteryMonitor::taskWrapper(void* pvParameters) {
 void BatteryMonitor::taskLoop() {
     while (true) {
         update();
-        vTaskDelay(pdMS_TO_TICKS(1000)); // Update every second
+        vTaskDelay(pdMS_TO_TICKS(10000)); // Update every 10 seconds
     }
 }
 
