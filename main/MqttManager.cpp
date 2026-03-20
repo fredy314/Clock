@@ -40,12 +40,13 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery) {
     _json_this_device_doc["model"] = "ESP32 Clock";
     _json_this_device_doc["manufacturer"] = "Custom";
 
-    // Хак для MQTTRemote (неініціалізовані стани)
     std::string mqttClientId = deviceId;
-    void* mem = ::operator new(sizeof(MQTTRemote));
-    std::memset(mem, 0, sizeof(MQTTRemote));
-    MQTTRemote* remote = new (mem) MQTTRemote(mqttClientId.c_str(), "mqtt.lan", 1883, "", "", { .buffer_size = 2048, .keep_alive_s = 10 });
-    _mqtt_remote.reset(remote);
+    MQTTRemote::Configuration config;
+    config.rx_buffer_size = 2048;
+    config.tx_buffer_size = 2048;
+    config.keep_alive_s = 10;
+    
+    _mqtt_remote = std::make_unique<MQTTRemote>(mqttClientId, "mqtt.lan", 1883, "", "", config);
 
     _ha_bridge = std::make_unique<HaBridge>(*_mqtt_remote, deviceId, _json_this_device_doc);
 
