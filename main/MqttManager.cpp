@@ -6,6 +6,8 @@
 #include <cstring>
 #include <new>
 #include <cmath>
+#include <optional>
+#include <memory>
 
 std::unique_ptr<MQTTRemote> MqttManager::_mqtt_remote;
 std::unique_ptr<HaBridge> MqttManager::_ha_bridge;
@@ -42,7 +44,7 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery) {
     std::string mqttClientId = deviceId;
     void* mem = ::operator new(sizeof(MQTTRemote));
     std::memset(mem, 0, sizeof(MQTTRemote));
-    MQTTRemote* remote = new (mem) MQTTRemote(mqttClientId.c_str(), "mqtt.lan", 1883, "", "", 2048, 10);
+    MQTTRemote* remote = new (mem) MQTTRemote(mqttClientId.c_str(), "mqtt.lan", 1883, "", "", { .buffer_size = 2048, .keep_alive_s = 10 });
     _mqtt_remote.reset(remote);
 
     _ha_bridge = std::make_unique<HaBridge>(*_mqtt_remote, deviceId, _json_this_device_doc);
