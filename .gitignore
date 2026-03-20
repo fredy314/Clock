@@ -2,8 +2,9 @@
 build/
 sdkconfig
 sdkconfig.old
-sdkconfig.defaults
 manage_components/
+# Папка з завантаженими компонентами
+managed_components/
 
 # Python specific
 __pycache__/
@@ -22,3 +23,5 @@ venv/
 /tmp/
 .bash_history
 .vscode
+
+

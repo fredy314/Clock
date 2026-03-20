@@ -1,5 +1,0 @@
-dependencies:
-  johboh/HomeAssistantEntities:
-    path: ../../../../
-  johboh/mqttremote:
-    version: '>=6.0.2'
