@@ -9,7 +9,8 @@
 
 #include "esp_err.h"
 #include "esp_http_server.h"
-#include "DhtManager.h"
+class DhtManager;
+class ClockManager;
 
 class WebServerManager {
 public:
@@ -17,7 +18,7 @@ public:
     static esp_err_t init_spiffs();
 
     // Запустити веб-сервер
-    static esp_err_t start_server(DhtManager* dht);
+    static esp_err_t start_server(DhtManager* dht, ClockManager* clock);
 
     // Зупинити веб-сервер
     static void stop_server();
@@ -28,10 +29,13 @@ public:
 private:
     static httpd_handle_t server;
     static DhtManager* _dht;
+    static ClockManager* _clock;
 
     // API обробники
     static esp_err_t status_get_handler(httpd_req_t *req);
     static esp_err_t ota_post_handler(httpd_req_t *req);
+    static esp_err_t display_temp_handler(httpd_req_t *req);
+    static esp_err_t display_hum_handler(httpd_req_t *req);
 
     // Універсальний обробник GET-запитів до статичних файлів
     static esp_err_t common_get_handler(httpd_req_t *req);

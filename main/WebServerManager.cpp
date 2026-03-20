@@ -7,6 +7,7 @@
 
 #include "WebServerManager.h"
 #include "LogManager.h"
+#include "ClockManager.h"
 #include <string.h>
 #include <stdio.h>
 #include <sys/param.h>

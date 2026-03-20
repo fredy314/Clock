@@ -149,11 +149,14 @@ void ClockManager::renderHumidity(float hum) {
     }
     
     // Символ %
-    display.setColumn(pos,   0x63);
-    display.setColumn(pos+1, 0x14);
-    display.setColumn(pos+2, 0x08);
-    display.setColumn(pos+3, 0x28);
-    display.setColumn(pos+4, 0xC6);
+    display.setColumn(pos,   0x86);
+    display.setColumn(pos+1, 0x49);
+    display.setColumn(pos+2, 0x26);
+    display.setColumn(pos+3, 0x10);
+    display.setColumn(pos+4, 0x08);
+    display.setColumn(pos+5, 0x64);
+    display.setColumn(pos+6, 0x92);
+    display.setColumn(pos+7, 0x61);
 
     display.flush();
 }
