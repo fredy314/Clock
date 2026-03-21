@@ -10,12 +10,12 @@
 #include <entities/HaEntityVoltage.h>
 #include <entities/HaEntityNumber.h>
 #include <nlohmann/json.hpp>
-#include "DhtManager.h"
 #include "BatteryMonitor.h"
+#include "ClockManager.h"
 
 class MqttManager {
 public:
-    static void init(DhtManager* dht, BatteryMonitor* battery);
+    static void init(DhtManager* dht, BatteryMonitor* battery, ClockManager* clock);
     static void publishAll();
     static void mqtt_task(void *pvParameters);
 
@@ -26,9 +26,11 @@ private:
     static std::unique_ptr<HaEntityHumidity> _ha_hum_sensor;
     static std::unique_ptr<HaEntityVoltage> _ha_bat_voltage;
     static std::unique_ptr<HaEntityNumber> _ha_bat_percentage;
+    static std::unique_ptr<HaEntityNumber> _ha_brightness;
     static nlohmann::json _json_this_device_doc;
     static DhtManager* _dht;
     static BatteryMonitor* _battery;
+    static ClockManager* _clock;
 
     static const char* TAG;
 };

@@ -8,6 +8,7 @@
 #include "WebServerManager.h"
 #include "LogManager.h"
 #include "ClockManager.h"
+#include "PropsManager.h"
 #include <string.h>
 #include <stdio.h>
 #include <sys/param.h>
@@ -171,6 +172,14 @@ esp_err_t WebServerManager::start_server(DhtManager* dht, ClockManager* clock) {
         };
         httpd_register_uri_handler(server, &ota_post_uri);
 
+        httpd_uri_t brightness_uri = {
+            .uri       = "/api/display/brightness",
+            .method    = HTTP_GET,
+            .handler   = brightness_get_handler,
+            .user_ctx  = NULL
+        };
+        httpd_register_uri_handler(server, &brightness_uri);
+
         httpd_uri_t wildcard_get = {
             .uri       = "/*", 
             .method    = HTTP_GET,
@@ -210,8 +219,8 @@ esp_err_t WebServerManager::status_get_handler(httpd_req_t *req) {
     }
 
     snprintf(response, 2048, 
-             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"project\":\"%s\",\"version\":\"%s\",\"logs\":%s}", 
-             time_str, date_str, t, h, app_desc->project_name, app_desc->version, logs_json.c_str());
+             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"brightness\":%d,\"project\":\"%s\",\"version\":\"%s\",\"logs\":%s}", 
+             time_str, date_str, t, h, _clock->getBrightness(), app_desc->project_name, app_desc->version, logs_json.c_str());
     
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, response);
@@ -348,6 +357,26 @@ esp_err_t WebServerManager::display_hum_handler(httpd_req_t *req) {
     if (_clock) _clock->showHum();
     httpd_resp_sendstr(req, "OK");
     return ESP_OK;
+}
+
+esp_err_t WebServerManager::brightness_get_handler(httpd_req_t *req) {
+    char buf[32];
+    if (httpd_req_get_url_query_str(req, buf, sizeof(buf)) == ESP_OK) {
+        char level_str[10];
+        if (httpd_query_key_value(buf, "level", level_str, sizeof(level_str)) == ESP_OK) {
+            int level = atoi(level_str);
+            if (level >= 0 && level <= 16) {
+                if (_clock) {
+                    _clock->setBrightness((uint8_t)level);
+                    PropsManager::setBrightness((uint8_t)level);
+                }
+                httpd_resp_sendstr(req, "OK");
+                return ESP_OK;
+            }
+        }
+    }
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid brightness level (0-16)");
+    return ESP_FAIL;
 }
 
 void WebServerManager::stop_server() {

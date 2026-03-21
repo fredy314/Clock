@@ -40,6 +40,16 @@ function updateDashboard() {
                 document.getElementById('humValue').innerText = data.humidity.toFixed(1);
             }
 
+            // Оновлення яскравості
+            if (data.brightness !== undefined) {
+                const slider = document.getElementById('brightnessSlider');
+                const label = document.getElementById('brightnessLabel');
+                if (slider && label && document.activeElement !== slider) {
+                    slider.value = data.brightness;
+                    label.innerText = data.brightness;
+                }
+            }
+
             // Оновлення логів
             if (data.logs && Array.isArray(data.logs)) {
                 const logsDiv = document.getElementById('logs-container');
@@ -102,4 +112,24 @@ document.addEventListener('DOMContentLoaded', () => {
             logsDiv.scrollTop = logsDiv.scrollHeight;
         }
     });
+
+    // Регулювання яскравості
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    const brightnessLabel = document.getElementById('brightnessLabel');
+    
+    if (brightnessSlider && brightnessLabel) {
+        brightnessSlider.addEventListener('input', (e) => {
+            const val = e.target.value;
+            brightnessLabel.innerText = val;
+        });
+
+        brightnessSlider.addEventListener('change', (e) => {
+            const val = e.target.value;
+            fetch(`/api/display/brightness?level=${val}`)
+                .then(r => {
+                    if (!r.ok) throw new Error('Failed to set brightness');
+                })
+                .catch(err => console.error(err));
+        });
+    }
 });

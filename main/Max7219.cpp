@@ -33,17 +33,24 @@ esp_err_t Max7219::init() {
 
     // Ініціалізація кожного чіпа
     sendCommand(0x09, 0x00); // Decode mode: none
-    sendCommand(0x0A, 0x01); // Intensity: 1 (min)
     sendCommand(0x0B, 0x07); // Scan limit: all digits
     sendCommand(0x0C, 0x01); // Shutdown mode: normal operation
     sendCommand(0x0F, 0x00); // Display test: off
+
+    currentIntensity = 1; // Дефолтне значення перед встановленням
 
     clear();
     return ESP_OK;
 }
 
 void Max7219::setIntensity(uint8_t level) {
-    sendCommand(0x0A, level & 0x0F);
+    currentIntensity = level;
+    if (level == 0) {
+        sendCommand(0x0C, 0x00); // Shutdown mode: off
+    } else {
+        sendCommand(0x0C, 0x01); // Normal operation: on
+        sendCommand(0x0A, (level - 1) & 0x0F);
+    }
 }
 
 void Max7219::clear() {

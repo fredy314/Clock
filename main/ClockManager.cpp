@@ -100,6 +100,14 @@ void ClockManager::showHum() {
     modeStartTime = esp_timer_get_time();
 }
 
+void ClockManager::setBrightness(uint8_t level) {
+    display.setIntensity(level);
+}
+
+uint8_t ClockManager::getBrightness() const {
+    return display.getIntensity();
+}
+
 void ClockManager::renderTemperature(float temp) {
     display.clear();
     char buf[16];

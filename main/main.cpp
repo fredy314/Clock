@@ -25,6 +25,7 @@
 #include "WebServerManager.h"
 #include "BatteryMonitor.h"
 #include "LogManager.h"
+#include "PropsManager.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -95,7 +96,7 @@ extern "C" void app_main(void)
     ESP_LOGI("MAIN", "Initializing Matrix...");
     Max7219* matrix = new Max7219(MAX7219_DIN_PIN, MAX7219_CLK_PIN, MAX7219_CS_PIN);
     matrix->init();
-    matrix->setIntensity(1); // поставити датчик світла і ставит 0 якщо темно)
+    matrix->setIntensity(PropsManager::getBrightness());
 
     // 4. Ініціалізація DHT22
     ESP_LOGI("MAIN", "Initializing DHT...");
@@ -116,17 +117,16 @@ extern "C" void app_main(void)
     BatteryMonitor* battery = new BatteryMonitor(0);
     battery->init();
 
-    // 7. MQTT
-    MqttManager::init(dht, battery);
-
-    // Ініціалізація Web Server
-    WebServerManager::init_spiffs();
-    
     // 8. Clock
     ESP_LOGI("MAIN", "Starting Clock task...");
     ClockManager* clock = new ClockManager(*matrix, *dht, *battery);
     clock->init();
 
+    // 9. MQTT
+    MqttManager::init(dht, battery, clock);
+
+    // Ініціалізація Web Server
+    WebServerManager::init_spiffs();
     WebServerManager::start_server(dht, clock);
 
     xTaskCreate([](void* p) {

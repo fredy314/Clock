@@ -1,3 +1,6 @@
+#ifndef CLOCK_MANAGER_H
+#define CLOCK_MANAGER_H
+
 /*
  * Clock project
  * Copyright (c) 2026 Fedir Vilhota <fredy31415@gmail.com>
@@ -18,6 +21,8 @@ public:
 
     void showTemp();
     void showHum();
+    void setBrightness(uint8_t level);
+    uint8_t getBrightness() const;
 
 private:
     enum DisplayMode { MODE_CLOCK, MODE_TEMP, MODE_HUM };
@@ -37,3 +42,5 @@ private:
     void renderLoading();
     void drawChar(int startCol, int digit);
 };
+
+#endif // CLOCK_MANAGER_H

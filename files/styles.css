@@ -215,3 +215,53 @@ footer {
     .time-card .card-value { font-size: 3rem; }
     .card-grid { grid-template-columns: 1fr; }
 }
+
+.brightness-card {
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+}
+
+.brightness-control {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+}
+
+.brightness-icon {
+    font-size: 1.2rem;
+}
+
+#brightnessSlider {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    outline: none;
+}
+
+#brightnessSlider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--accent-color);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: transform 0.1s ease;
+}
+
+#brightnessSlider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+}
+
+.brightness-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+

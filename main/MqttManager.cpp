@@ -8,21 +8,26 @@
 #include <cmath>
 #include <optional>
 #include <memory>
+#include "PropsManager.h"
 
 std::unique_ptr<MQTTRemote> MqttManager::_mqtt_remote;
 std::unique_ptr<HaBridge> MqttManager::_ha_bridge;
 std::unique_ptr<HaEntityTemperature> MqttManager::_ha_temp_sensor;
 std::unique_ptr<HaEntityHumidity> MqttManager::_ha_hum_sensor;
 std::unique_ptr<HaEntityVoltage> MqttManager::_ha_bat_voltage;
+std::unique_ptr<HaEntityNumber> MqttManager::_ha_bat_percentage;
+std::unique_ptr<HaEntityNumber> MqttManager::_ha_brightness;
 nlohmann::json MqttManager::_json_this_device_doc;
 DhtManager* MqttManager::_dht = nullptr;
 BatteryMonitor* MqttManager::_battery = nullptr;
+ClockManager* MqttManager::_clock = nullptr;
 
 const char* MqttManager::TAG = "MqttManager";
 
-void MqttManager::init(DhtManager* dht, BatteryMonitor* battery) {
+void MqttManager::init(DhtManager* dht, BatteryMonitor* battery, ClockManager* clock) {
     _dht = dht;
     _battery = battery;
+    _clock = clock;
     ESP_LOGI(TAG, "Initializing MQTT Manager...");
 
     // MAC-адреса для ID
@@ -67,6 +72,21 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery) {
     batVConfig.force_update = true;
     _ha_bat_voltage = std::make_unique<HaEntityVoltage>(*_ha_bridge, "Battery Voltage", std::string("bat_v"), batVConfig);
 
+    // Яскравість
+    HaEntityNumber::Configuration brightConfig;
+    brightConfig.min_value = 0.0f;
+    brightConfig.max_value = 16.0f;
+    brightConfig.force_update = true;
+    _ha_brightness = std::make_unique<HaEntityNumber>(*_ha_bridge, "Brightness", std::string("brightness"), brightConfig);
+    _ha_brightness->setOnNumber([](float value) {
+        uint8_t level = static_cast<uint8_t>(value);
+        if (_clock) {
+            _clock->setBrightness(level);
+            PropsManager::setBrightness(level);
+            ESP_LOGI(TAG, "Brightness set from HA: %d", level);
+        }
+    });
+
     _mqtt_remote->start();
     xTaskCreate(MqttManager::mqtt_task, "mqtt_task", 4096, NULL, 5, NULL);
 }
@@ -84,6 +104,11 @@ void MqttManager::publishAll() {
         _ha_temp_sensor->publishTemperature(static_cast<double>(t));
         _ha_hum_sensor->publishHumidity(static_cast<double>(h));
         _ha_bat_voltage->publishVoltage(static_cast<double>(v));
+
+        if (_clock && _ha_brightness) {
+            _ha_brightness->publishConfiguration(); // Важливо перепублікувати якщо є зміни або при старті
+            _ha_brightness->updateNumber(static_cast<float>(_clock->getBrightness()));
+        }
         
         ESP_LOGI(TAG, "MQTT Published: T=%.1f, H=%.1f, V=%.2fV", t, h, v);
     }

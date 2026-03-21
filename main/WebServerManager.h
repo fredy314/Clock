@@ -36,6 +36,7 @@ private:
     static esp_err_t ota_post_handler(httpd_req_t *req);
     static esp_err_t display_temp_handler(httpd_req_t *req);
     static esp_err_t display_hum_handler(httpd_req_t *req);
+    static esp_err_t brightness_get_handler(httpd_req_t *req);
 
     // Універсальний обробник GET-запитів до статичних файлів
     static esp_err_t common_get_handler(httpd_req_t *req);

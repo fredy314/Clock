@@ -20,6 +20,7 @@ public:
 
     esp_err_t init();
     void setIntensity(uint8_t level);
+    uint8_t getIntensity() const { return currentIntensity; }
     void clear();
     void setColumn(uint8_t col, uint8_t data);
     void flush();
@@ -28,6 +29,7 @@ private:
     gpio_num_t mosi_pin, clk_pin, cs_pin;
     spi_device_handle_t spi;
     uint8_t buffer[MAX7219_COLS];
+    uint8_t currentIntensity;
 
     void sendCommand(uint8_t reg, uint8_t val);
 };
