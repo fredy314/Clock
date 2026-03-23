@@ -5,6 +5,7 @@
  * See the LICENSE file in the project root for full license information.
  */
 #include "ClockManager.h"
+#include "SunTimeManager.h"
 #include "font.h"
 #include "esp_sntp.h"
 #include "esp_log.h"
@@ -60,6 +61,15 @@ void ClockManager::updateTask() {
             }
         }
 
+        if(SunTimeManager::isNight() && _night == 0) {
+            _night = 1;
+            setBrightness(_brightness);
+        }
+        if(!SunTimeManager::isNight() && _night == 1) {
+            _night = 0;
+            setBrightness(_brightness);
+        }
+
         vTaskDelay(pdMS_TO_TICKS(500)); // Частіше оновлення для швидкості реакції
     }
 }
@@ -101,11 +111,16 @@ void ClockManager::showHum() {
 }
 
 void ClockManager::setBrightness(uint8_t level) {
-    display.setIntensity(level);
+    _brightness = level;
+    if (_night == 1 && level > 1) {
+        display.setIntensity(level >> 1);
+    } else {
+        display.setIntensity(level);
+    }
 }
 
 uint8_t ClockManager::getBrightness() const {
-    return display.getIntensity();
+    return _brightness;
 }
 
 void ClockManager::renderTemperature(float temp) {

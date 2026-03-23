@@ -12,7 +12,7 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 6.1.0
+    version: 6.0.0
   johboh/homeassistantentities:
     component_hash: 109109795bfc5e720a1ba732a811175e38aecbb184b2522aea79d697061ee709
     dependencies:
@@ -55,4 +55,4 @@ direct_dependencies:
 - johboh/nlohmann-json
 manifest_hash: 68f9e11ddbd6b4b916d53f6fa5266268e2472a0bdc5682cfdebf12495067bd54
 target: esp32c3
-version: 2.0.0
+version: 3.0.0

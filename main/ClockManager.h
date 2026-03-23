@@ -28,6 +28,8 @@ private:
     enum DisplayMode { MODE_CLOCK, MODE_TEMP, MODE_HUM };
     DisplayMode currentMode = MODE_CLOCK;
     int64_t modeStartTime = 0;
+    uint8_t _brightness = 2;
+    uint8_t _night = 0;
 
     Max7219& display;
     DhtManager& dht;
