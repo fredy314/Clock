@@ -17,6 +17,24 @@
 void* RtcManager::dev_handle = nullptr;
 static bool s_rtc_synced = false;
 
+static time_t utc_tm_to_time_t(struct tm *tm) {
+    int year = tm->tm_year + 1900;
+    int month = tm->tm_mon + 1;
+    if (month <= 2) {
+        year -= 1;
+        month += 12;
+    }
+    int day = tm->tm_mday;
+    int hour = tm->tm_hour;
+    int min = tm->tm_min;
+    int sec = tm->tm_sec;
+
+    int days = 365 * year + year / 4 - year / 100 + year / 400 + (153 * month - 457) / 5 + day - 306;
+    days -= 719527; // Дні між 0000-03-01 та 1970-01-01
+
+    return (time_t)(days * 86400LL + hour * 3600LL + min * 60LL + sec);
+}
+
 static void rtc_retry_task(void* pvParameters) {
     while (!s_rtc_synced) {
         vTaskDelay(pdMS_TO_TICKS(60000)); // Затримка 1 хвилина
@@ -111,12 +129,12 @@ time_t RtcManager::getRtcTime() {
     tm.tm_mon  = bcdToDec(data[5] & 0x1F) - 1;
     tm.tm_year = bcdToDec(data[6]) + 100; // Since 2000
 
-    return mktime(&tm);
+    return utc_tm_to_time_t(&tm);
 }
 
 void RtcManager::updateRtc(time_t t) {
     struct tm tm;
-    localtime_r(&t, &tm);
+    gmtime_r(&t, &tm); // ВАЖЛИВО: зберігаємо UTC час для правильної обробки літнього часу!
 
     uint8_t data[7];
     data[0] = decToBcd(tm.tm_sec);
@@ -128,7 +146,7 @@ void RtcManager::updateRtc(time_t t) {
     data[6] = decToBcd(tm.tm_year - 100);
 
     writeReg(0x00, data, 7);
-    ESP_LOGI("RtcManager", "RTC updated to: %s", asctime(&tm));
+    ESP_LOGI("RtcManager", "RTC updated to UTC time");
 }
 
 uint8_t RtcManager::bcdToDec(uint8_t val) { return ((val / 16 * 10) + (val % 16)); }

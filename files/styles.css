@@ -264,4 +264,43 @@ footer {
     font-weight: 600;
     color: var(--text-color);
 }
+}
 
+.zones-card {
+    grid-column: 1 / -1;
+}
+
+.zones-container {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 15px;
+    gap: 8px;
+}
+
+.zone-indicator {
+    flex: 1;
+    height: 30px;
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+}
+
+.zone-indicator .zone-num {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.zone-indicator.active {
+    background-color: #ffd700;
+    border-color: #f1c40f;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.zone-indicator.active .zone-num {
+    color: #4a3f00;
+}

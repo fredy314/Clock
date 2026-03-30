@@ -26,6 +26,7 @@
 #include "BatteryMonitor.h"
 #include "LogManager.h"
 #include "PropsManager.h"
+#include "HlkLd2410Manager.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -136,6 +137,10 @@ extern "C" void app_main(void)
     // 8. Sync task
     ESP_LOGI("MAIN", "Starting Sync task...");
     xTaskCreate(uart_sync_task, "sync_task", 4096, NULL, 6, NULL);
+
+    // 10. HLK-LD2410C Motion Sensor
+    ESP_LOGI("MAIN", "Initializing HLK-LD2410C...");
+    HlkLd2410Manager::init();
 
     ESP_LOGI("MAIN", "Ready!");
 }

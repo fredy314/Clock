@@ -17,6 +17,7 @@ std::unique_ptr<HaEntityHumidity> MqttManager::_ha_hum_sensor;
 std::unique_ptr<HaEntityVoltage> MqttManager::_ha_bat_voltage;
 std::unique_ptr<HaEntityNumber> MqttManager::_ha_bat_percentage;
 std::unique_ptr<HaEntityNumber> MqttManager::_ha_brightness;
+std::unique_ptr<HaEntityMotion> MqttManager::_ha_motion_sensors[8];
 nlohmann::json MqttManager::_json_this_device_doc;
 DhtManager* MqttManager::_dht = nullptr;
 BatteryMonitor* MqttManager::_battery = nullptr;
@@ -87,6 +88,15 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery, ClockManager* c
         }
     });
 
+    // Зони руху
+    for (int i = 0; i < 8; i++) {
+        _ha_motion_sensors[i] = std::make_unique<HaEntityMotion>(
+            *_ha_bridge, 
+            "Motion Zone " + std::to_string(i), 
+            std::string("motion_z") + std::to_string(i)
+        );
+    }
+
     _mqtt_remote->start();
     xTaskCreate(MqttManager::mqtt_task, "mqtt_task", 4096, NULL, 5, NULL);
 }
@@ -96,6 +106,9 @@ void MqttManager::publishAll() {
         _ha_temp_sensor->publishConfiguration();
         _ha_hum_sensor->publishConfiguration();
         _ha_bat_voltage->publishConfiguration();
+        for (int i = 0; i < 8; i++) {
+            if (_ha_motion_sensors[i]) _ha_motion_sensors[i]->publishConfiguration();
+        }
 
         float t = roundf(_dht->getTemperature() * 10.0f) / 10.0f;
         float h = roundf(_dht->getHumidity() * 10.0f) / 10.0f;
@@ -118,5 +131,11 @@ void MqttManager::mqtt_task(void *pvParameters) {
     while (1) {
         MqttManager::publishAll();
         vTaskDelay(pdMS_TO_TICKS(60000)); // Кожну хвилину
+    }
+}
+
+void MqttManager::setMotionSensor(int zone, bool state) {
+    if (zone >= 0 && zone < 8 && _ha_motion_sensors[zone]) {
+        _ha_motion_sensors[zone]->updateMotion(state);
     }
 }

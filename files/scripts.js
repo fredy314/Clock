@@ -50,6 +50,20 @@ function updateDashboard() {
                 }
             }
 
+            // Оновлення зон руху
+            if (data.zones && Array.isArray(data.zones)) {
+                for (let i = 0; i < 8; i++) {
+                    const zoneEl = document.getElementById(`zone-${i}`);
+                    if (zoneEl) {
+                        if (data.zones.includes(i)) {
+                            zoneEl.classList.add('active');
+                        } else {
+                            zoneEl.classList.remove('active');
+                        }
+                    }
+                }
+            }
+
             // Оновлення логів
             if (data.logs && Array.isArray(data.logs)) {
                 const logsDiv = document.getElementById('logs-container');

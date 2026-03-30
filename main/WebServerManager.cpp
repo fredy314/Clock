@@ -9,6 +9,7 @@
 #include "LogManager.h"
 #include "ClockManager.h"
 #include "PropsManager.h"
+#include "HlkLd2410Manager.h"
 #include <string.h>
 #include <stdio.h>
 #include <sys/param.h>
@@ -211,6 +212,7 @@ esp_err_t WebServerManager::status_get_handler(httpd_req_t *req) {
 
     const esp_app_desc_t *app_desc = esp_app_get_description();
     std::string logs_json = LogManager::getLogsJson(5);
+    std::string zones_json = HlkLd2410Manager::getActiveZonesJson();
 
     char *response = (char*)malloc(2048);
     if (response == NULL) {
@@ -219,8 +221,8 @@ esp_err_t WebServerManager::status_get_handler(httpd_req_t *req) {
     }
 
     snprintf(response, 2048, 
-             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"brightness\":%d,\"project\":\"%s\",\"version\":\"%s\",\"logs\":%s}", 
-             time_str, date_str, t, h, _clock->getBrightness(), app_desc->project_name, app_desc->version, logs_json.c_str());
+             "{\"time\":\"%s\",\"date\":\"%s\",\"temperature\":%.1f,\"humidity\":%.1f,\"brightness\":%d,\"project\":\"%s\",\"version\":\"%s\",\"zones\":%s,\"logs\":%s}", 
+             time_str, date_str, t, h, _clock->getBrightness(), app_desc->project_name, app_desc->version, zones_json.c_str(), logs_json.c_str());
     
     httpd_resp_set_type(req, "application/json");
     httpd_resp_sendstr(req, response);
