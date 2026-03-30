@@ -23,6 +23,7 @@ class HlkLd2410Manager {
 public:
     static void init();
     static std::string getActiveZonesJson();
+    static bool getZoneState(int zone);
 
 private:
     static void readTask(void* pvParameters);

@@ -9,6 +9,7 @@
 #include <optional>
 #include <memory>
 #include "PropsManager.h"
+#include "HlkLd2410Manager.h"
 
 std::unique_ptr<MQTTRemote> MqttManager::_mqtt_remote;
 std::unique_ptr<HaBridge> MqttManager::_ha_bridge;
@@ -95,6 +96,8 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery, ClockManager* c
             "Motion Zone " + std::to_string(i), 
             std::string("motion_z") + std::to_string(i)
         );
+        // Зберігаємо початковий стан в кеш сутності до підключення
+        _ha_motion_sensors[i]->updateMotion(HlkLd2410Manager::getZoneState(i));
     }
 
     _mqtt_remote->start();
@@ -107,7 +110,10 @@ void MqttManager::publishAll() {
         _ha_hum_sensor->publishConfiguration();
         _ha_bat_voltage->publishConfiguration();
         for (int i = 0; i < 8; i++) {
-            if (_ha_motion_sensors[i]) _ha_motion_sensors[i]->publishConfiguration();
+            if (_ha_motion_sensors[i]) {
+                _ha_motion_sensors[i]->publishConfiguration();
+                _ha_motion_sensors[i]->publishMotion(HlkLd2410Manager::getZoneState(i));
+            }
         }
 
         float t = roundf(_dht->getTemperature() * 10.0f) / 10.0f;

@@ -6,6 +6,9 @@ static const char *TAG = "HLK-LD2410";
 static uint32_t zone_last_active[8] = {0};
 
 void HlkLd2410Manager::init() {
+    uint32_t init_time = 0 - pdMS_TO_TICKS(5000);
+    for(int i=0; i<8; i++) zone_last_active[i] = init_time;
+
     uart_config_t uart_config = {};
     uart_config.baud_rate = HLK_LD2410_UART_BAUD_RATE;
     uart_config.data_bits = UART_DATA_8_BITS;
@@ -114,6 +117,12 @@ void HlkLd2410Manager::readTask(void* pvParameters) {
             }
         }
     }
+}
+
+bool HlkLd2410Manager::getZoneState(int zone) {
+    if (zone < 0 || zone >= 8) return false;
+    uint32_t current_time = xTaskGetTickCount();
+    return (current_time - zone_last_active[zone]) < pdMS_TO_TICKS(5000);
 }
 
 std::string HlkLd2410Manager::getActiveZonesJson() {
