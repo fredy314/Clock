@@ -19,6 +19,7 @@ std::unique_ptr<HaEntityVoltage> MqttManager::_ha_bat_voltage;
 std::unique_ptr<HaEntityNumber> MqttManager::_ha_bat_percentage;
 std::unique_ptr<HaEntityNumber> MqttManager::_ha_brightness;
 std::unique_ptr<HaEntityMotion> MqttManager::_ha_motion_sensors[8];
+std::unique_ptr<HaEntitySound> MqttManager::_ha_sound_sensor;
 nlohmann::json MqttManager::_json_this_device_doc;
 DhtManager* MqttManager::_dht = nullptr;
 BatteryMonitor* MqttManager::_battery = nullptr;
@@ -100,6 +101,10 @@ void MqttManager::init(DhtManager* dht, BatteryMonitor* battery, ClockManager* c
         _ha_motion_sensors[i]->updateMotion(HlkLd2410Manager::getZoneState(i));
     }
 
+    // Датчик звуку
+    _ha_sound_sensor = std::make_unique<HaEntitySound>(*_ha_bridge, "Sound", std::string("sound"));
+    _ha_sound_sensor->updateSound(false);
+
     _mqtt_remote->start();
     xTaskCreate(MqttManager::mqtt_task, "mqtt_task", 4096, NULL, 5, NULL);
 }
@@ -114,6 +119,10 @@ void MqttManager::publishAll() {
                 _ha_motion_sensors[i]->publishConfiguration();
                 _ha_motion_sensors[i]->publishMotion(HlkLd2410Manager::getZoneState(i));
             }
+        }
+        
+        if (_ha_sound_sensor) {
+            _ha_sound_sensor->publishConfiguration();
         }
 
         float t = roundf(_dht->getTemperature() * 10.0f) / 10.0f;
@@ -143,5 +152,11 @@ void MqttManager::mqtt_task(void *pvParameters) {
 void MqttManager::setMotionSensor(int zone, bool state) {
     if (zone >= 0 && zone < 8 && _ha_motion_sensors[zone]) {
         _ha_motion_sensors[zone]->updateMotion(state);
+    }
+}
+
+void MqttManager::setSoundSensor(bool detected) {
+    if (_ha_sound_sensor) {
+        _ha_sound_sensor->updateSound(detected);
     }
 }

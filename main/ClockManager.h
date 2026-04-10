@@ -14,6 +14,8 @@
 
 class ClockManager {
 public:
+    enum DisplayMode { MODE_CLOCK, MODE_TEMP, MODE_HUM };
+
     ClockManager(Max7219& matrix, DhtManager& dht, BatteryMonitor& battery);
 
     void init();
@@ -21,11 +23,12 @@ public:
 
     void showTemp();
     void showHum();
+    void showClock();
     void setBrightness(uint8_t level);
     uint8_t getBrightness() const;
+    DisplayMode getMode() const { return currentMode; }
 
 private:
-    enum DisplayMode { MODE_CLOCK, MODE_TEMP, MODE_HUM };
     DisplayMode currentMode = MODE_CLOCK;
     int64_t modeStartTime = 0;
     uint8_t _brightness = 2;

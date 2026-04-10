@@ -87,22 +87,44 @@ void BatteryMonitor::taskWrapper(void* pvParameters) {
 }
 
 void BatteryMonitor::taskLoop() {
+    vTaskDelay(pdMS_TO_TICKS(5000)); // Зачекати повного старту решти систем (в т.ч. SoundCheck)
     while (true) {
         update();
         vTaskDelay(pdMS_TO_TICKS(10000)); // Update every 10 seconds
     }
 }
 
+extern volatile bool pause_sound_check;
+extern volatile bool is_sound_check_paused;
+
 void BatteryMonitor::update() {
     // Stage 1: Fast average of 5 readings
     int sum = 0;
-    for(int i=0; i<5; i++) {
-        int val;
-        adc_oneshot_read(_adc_handle, (adc_channel_t)_adc_channel, &val);
-        sum += val;
-        // Small delay between fast samples to reduce noise but stay "fast"
-        vTaskDelay(pdMS_TO_TICKS(5)); 
+    
+    // Зупиняємо детекцію звуку, щоб не було конфлікту на ADC1
+    pause_sound_check = true;
+    int timeout = 0;
+    while (!is_sound_check_paused && timeout < 100) {
+        vTaskDelay(pdMS_TO_TICKS(10));
+        timeout++;
     }
+
+    if (is_sound_check_paused) {
+        for(int i=0; i<5; i++) {
+            int val;
+            adc_oneshot_read(_adc_handle, (adc_channel_t)_adc_channel, &val);
+            sum += val;
+            // Small delay between fast samples to reduce noise but stay "fast"
+            vTaskDelay(pdMS_TO_TICKS(5)); 
+        }
+    } else {
+        ESP_LOGE(TAG, "SoundCheck pause timeout! Skipping battery reading.");
+        sum = _last_voltage * 4095.0f / (3.1f * 2.0f); // фейкове значення
+    }
+    
+    // Відновлюємо детекцію
+    pause_sound_check = false;
+
     int avg_raw = sum / 5;
 
     // Stage 2: Store in 10-sample buffer

@@ -110,6 +110,11 @@ void ClockManager::showHum() {
     modeStartTime = esp_timer_get_time();
 }
 
+void ClockManager::showClock() {
+    currentMode = MODE_CLOCK;
+    display.clear();
+}
+
 void ClockManager::setBrightness(uint8_t level) {
     _brightness = level;
     if (_night == 1 && level > 1) {

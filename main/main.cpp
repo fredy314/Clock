@@ -27,6 +27,7 @@
 #include "LogManager.h"
 #include "PropsManager.h"
 #include "HlkLd2410Manager.h"
+#include "SoundCheck.h"
 
 #define SSID "HomeF"
 #define PASSWORD "21122112"
@@ -122,6 +123,12 @@ extern "C" void app_main(void)
     ESP_LOGI("MAIN", "Starting Clock task...");
     ClockManager* clock = new ClockManager(*matrix, *dht, *battery);
     clock->init();
+
+    // 8.5 Sound Check (MAX4466)
+    ESP_LOGI("MAIN", "Initializing SoundCheck...");
+    SoundCheck* sound = new SoundCheck(*clock);
+    sound->init();
+    xTaskCreate([](void* p) { ((SoundCheck*)p)->runTask(); }, "sound_task", 4096, sound, 4, NULL);
 
     // 9. MQTT
     MqttManager::init(dht, battery, clock);

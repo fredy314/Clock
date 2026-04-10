@@ -10,6 +10,7 @@
 #include <entities/HaEntityVoltage.h>
 #include <entities/HaEntityNumber.h>
 #include <entities/HaEntityMotion.h>
+#include <entities/HaEntitySound.h>
 #include <nlohmann/json.hpp>
 #include "BatteryMonitor.h"
 #include "ClockManager.h"
@@ -20,6 +21,7 @@ public:
     static void publishAll();
     static void mqtt_task(void *pvParameters);
     static void setMotionSensor(int zone, bool state);
+    static void setSoundSensor(bool detected);
 
 private:
     static std::unique_ptr<MQTTRemote> _mqtt_remote;
@@ -30,6 +32,7 @@ private:
     static std::unique_ptr<HaEntityNumber> _ha_bat_percentage;
     static std::unique_ptr<HaEntityNumber> _ha_brightness;
     static std::unique_ptr<HaEntityMotion> _ha_motion_sensors[8];
+    static std::unique_ptr<HaEntitySound> _ha_sound_sensor;
     static nlohmann::json _json_this_device_doc;
     static DhtManager* _dht;
     static BatteryMonitor* _battery;
