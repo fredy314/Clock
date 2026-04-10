@@ -166,8 +166,10 @@ void SoundCheck::runTask() {
                                 ClockManager::DisplayMode currentMode = _clock.getMode();
                                 if (currentMode == ClockManager::MODE_CLOCK) {
                                     _clock.showTemp();
+                                    ignore_sound_until = (esp_timer_get_time() / 1000) + 500;
                                 } else if (currentMode == ClockManager::MODE_TEMP) {
                                     _clock.showHum();
+                                    ignore_sound_until = (esp_timer_get_time() / 1000) + 500;
                                 } else if (currentMode == ClockManager::MODE_HUM) {
                                     _clock.showClock();
                                     ignore_sound_until = (esp_timer_get_time() / 1000) + 2000; // Пауза 2 секунди
